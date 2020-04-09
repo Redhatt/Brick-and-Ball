@@ -5,7 +5,7 @@ import numpy as np
 
 
 class projectOnScreen:
-	def __init__(self, frame, cam, nodes, edges, spherical=False, node_color=(200, 0, 0), edge_color=(0, 0, 0)):
+	def __init__(self, frame, cam, nodes, edges, faces, spherical=False, node_color=(200, 0, 0), edge_color=(0, 0, 0)):
 		self.coordinates = np.array([1,1,1])
 		self.frame = frame
 		self.center_x, self.center_y = self.frame[0] * 0.5, self.frame[1] * 0.5
@@ -13,12 +13,14 @@ class projectOnScreen:
 		self.projected_coordinates = np.array([1, 1, 1])
 		self.spherical = spherical
 		self.edges = edges
+		self.faces = faces
 		self.edge_color = edge_color
 		self.nodes = nodes
 		self.node_color = node_color
 
 	# shifting coordinate system...
 	def translate(self):
+		self.coordinates = np.float64(self.coordinates)
 		self.coordinates -= np.array(self.cam.pos)
 
 	def rotate_3D(self):
@@ -26,38 +28,33 @@ class projectOnScreen:
 		vec = quaternions.qrot_vec(vec, self.cam.rot_y, self.cam.pitch_vec, self.cam.pos)
 		self.coordinates = vec
 
-	def project(self, demanded=False):
+	def project(self):
 		self.coordinates = np.array(self.coordinates)
 		some_factor = 10000 # pixel to unit ratio inverse.
 		planner = np.dot(self.coordinates, self.cam.roll_vec)
 		sphere = np.linalg.norm(self.coordinates)
-		if math.copysign(1,planner) == -1:
-			visible = 0
-		else:
+		tt = self.cam.radius/planner
+		if 0<tt<0.9:#math.copysign(1,planner) == 1:
 			visible = 1
+		else:
+			visible = 0
 		if not self.spherical:
 			ratio = self.cam.radius/planner
 			projected_vec = ratio*self.coordinates-self.cam.roll_vec*self.cam.radius
 			along = np.dot(self.cam.azimuthal_vec, projected_vec)
 			perpen = np.dot(self.cam.pitch_vec, projected_vec)
-			if demanded:
-				return [int(perpen*some_factor + self.center_x), int(along*some_factor + self.center_y), visible]
-			else:
-				self.projected_coordinates = [int(perpen*some_factor + self.center_x), int(along*some_factor + self.center_y), visible]
+			self.projected_coordinates = [int(perpen*some_factor + self.center_x), int(along*some_factor + self.center_y), visible]
 		else:
 			ratio = self.cam.radius/sphere
 			projected_vec = ratio*self.coordinates-self.cam.roll_vec*self.cam.radius
 			along = np.dot(self.cam.azimuthal_vec, projected_vec)
 			perpen = np.dot(self.cam.pitch_vec, projected_vec)
-			if demanded:
-				return [int(perpen*some_factor + self.center_x), int(along*some_factor + self.center_y), visible]
-			else:
-				self.projected_coordinates = [int(perpen*some_factor + self.center_x), int(along*some_factor + self.center_y), visible]
+			self.projected_coordinates = [int(perpen*some_factor + self.center_x), int(along*some_factor + self.center_y), visible]
 
 
 	def edgeVisiblePoint(self, visible_points, points):
 		point1, point2 = points[0], points[1]
-		self.coordinates = np.float32(self.coordinates)
+		self.coordinates = np.float64(self.coordinates)
 		if point1[2] == 0 and point2[2] == 0:
 			return None
 		else:
@@ -66,22 +63,55 @@ class projectOnScreen:
 				# a = visible_points[0]
 				# self.coordinates = a+((self.cam.radius-np.dot(a, self.cam.roll_vec))/(np.dot(b,self.cam.roll_vec)))*b
 				self.coordinates = visible_points[0]+((self.cam.radius-np.dot(visible_points[0], self.cam.roll_vec))/(np.dot(b,self.cam.roll_vec)))*b
-				
-				point2 = self.project(demanded=True)
+				self.project()
+				point2 = self.projected_coordinates
 			elif point1[2] == 0:
 				b = visible_points[0]-visible_points[1]
 				#a = visible_points[1]
 				self.coordinates = visible_points[1]+((self.cam.radius-np.dot(visible_points[1], self.cam.roll_vec))/(np.dot(b,self.cam.roll_vec)))*b
-				point1 = self.project(demanded=True)
+				self.project()
+				point1 = self.projected_coordinates
 			else:
 				return points
 		return [point1, point2]
 
-
+	def faceVisiblePoint(self, visible_points, new_face):
+		n = len(new_face)
+		count = 0
+		for i in range(n):
+			if new_face[i][2] == 0 and new_face[(i+1)%n][2] == 0:
+				count += 1
+			else:
+				new_face[i], new_face[(i+1)%n] = self.edgeVisiblePoint([visible_points[i], visible_points[(i+1)%n]], [new_face[i], new_face[(i+1)%n]])
+		if count == n:
+			return None
+		else:
+			return new_face
 
 	def select_transform(self):
 		self.translate()
 		self.project()
+
+	def render_faces(self, screen, faces, vertices, color=None):
+		colors = ((200, 0, 0), (0, 200, 0), (0, 0, 200), (200, 200, 0), (0, 200, 200), (200, 0, 200), (0, 0, 0))
+		sort_face = []
+		for i, face in enumerate(faces):
+			mean = np.array([0,0,0], dtype=np.float64)
+			new_face = []
+			visible_points = []
+			for nodes in face:
+				self.coordinates = np.array(vertices[nodes])
+				self.select_transform()
+				visible_points += [self.coordinates]
+				mean += np.array(self.coordinates)
+				new_face.append(self.projected_coordinates)
+			new_face = self.faceVisiblePoint(visible_points, new_face)
+			sort_face.append((new_face, np.linalg.norm(mean/4), colors[i%6]))
+		sort_face.sort(key=lambda x: x[1], reverse=True)
+
+		for face in sort_face:
+			if face[0] is not None:
+				pygame.draw.polygon(screen, face[2], (face[0][0][:2], face[0][1][:2], face[0][2][:2], face[0][3][:2]))
 
 	def render_edges(self,screen, edges, vertices, color=None):
 		if color == None:
@@ -141,7 +171,7 @@ class projectOnScreen:
 			# screen.blit(text, textRect)
 
 
-	def run(self, edges=True, nodes=True, axis=False):
+	def run(self, faces=False, edges=True, nodes=True, axis=False, time_speed=0.001):
 		pygame.init()
 		center_x, center_y = self.frame[0] * 0.5, self.frame[1] * 0.5
 		center_x, center_y = int(center_x), int(center_y)
@@ -153,7 +183,7 @@ class projectOnScreen:
 		pygame.event.set_grab(1)
 
 		while True:
-			dt = clock.tick()*0.001
+			dt = clock.tick()*time_speed
 			for event in pygame.event.get():
 				if event.type == pygame.QUIT:
 					pygame.quit()
@@ -165,6 +195,8 @@ class projectOnScreen:
 				self.cam.mouse_events(event)
 
 			screen.fill((200, 200, 200))
+			if faces:
+				self.render_faces(screen, self.faces, self.nodes)
 			if edges:
 				self.render_edges(screen, self.edges, self.nodes)
 			if nodes:
@@ -219,7 +251,7 @@ class Cam:
 
 	def update(self, dt, key):
 		s = dt*5
-		self.pos = np.array(self.pos, dtype=np.float32)
+		self.pos = np.array(self.pos, dtype=np.float64)
 		if key[pygame.K_a]: self.pos -= self.pitch_vec*s
 		if key[pygame.K_s]: self.pos -= self.roll_vec*s
 		if key[pygame.K_w]: self.pos += self.roll_vec*s
@@ -239,28 +271,29 @@ if __name__ == "__main__":
 			 (0, 4), (1, 5), (2, 6), (3, 7),
 			 (4, 5), (5, 6), (6, 7), (7, 4))
 
+	cube_faces = ((0, 1, 2, 3), (4, 5, 6, 7), (0, 4, 7, 3), (1, 5, 6, 2), (0, 1, 5, 4), (3, 2, 6, 7))
+
 	vertices = []
 	edges = []
+	faces = []
+
 	for i in range(4):
 		for c_nodes in cube:
 			value = list(c_nodes[:])
 			value[0] += i*2
 			vertices.append(value)
-		for c_edge in cube_edges:
-			value2 = list(c_edge[:])
-			for j in range(len(value2)):
-				value2[j] += i*8
-			edges.append(value2)
 
 		for c_nodes in cube:
 			value = list(c_nodes[:])
 			value[1] += i*2
 			vertices.append(value)
-		for c_edge in cube_edges:
-			value2 = list(c_edge[:])
-			for j in range(len(value2)):
-				value2[j] += i*8
-			edges.append(value2)
+
+	for i in range(8):
+		for c_faces in cube_faces:
+			value3 = list(c_faces[:])
+			for k in range(len(value3)):
+				value3[k] += i*8
+			faces.append(value3)
 
 	for i in range(8):
 		for c_edge in cube_edges:
@@ -269,6 +302,8 @@ if __name__ == "__main__":
 				value2[j] += i*8
 			edges.append(value2)
 
-	myscreen = projectOnScreen((1000, 600),Cam(pos=(0,0,5)), vertices, edges, spherical=False, node_color=(200, 0, 0))
-	myscreen.run(edges=True, nodes=False, axis=False)
+	myscreen = projectOnScreen((1000, 600),Cam(pos=(0,0,5)), cube, cube_edges, cube_faces, spherical=False, node_color=(200, 0, 0))
+	myscreen.run(faces=True, edges=True, nodes=True, axis=False, time_speed=0.0012)
+
+wn.run(faces=True, edges=False, nodes=False, axis=False, time_speed=0.0012)
 

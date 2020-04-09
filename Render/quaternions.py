@@ -118,6 +118,8 @@ def qrot_vec(vector, angle, axis, point=np.array([0,0,0])):
     v_prime = vector.quat[1:4]
     q_final = v_prime*(np.square(w) - np.dot(v, v)) + 2 * (np.dot(v, v_prime)) * v + 2 * w * (np.cross(v, v_prime))
     result = np.array(q_final) + point
+    del rotation
+    del vector
     return result
 
 def quat2vec(quat):
