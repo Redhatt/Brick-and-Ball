@@ -152,10 +152,6 @@ class projectOnScreen:
 		pygame.mouse.set_visible(0)
 		pygame.event.set_grab(1)
 
-		# mouse_mov = [0,0]
-		# m_pos = [-100,-100]
-		# t = 0
-		# error = True
 		while True:
 			dt = clock.tick()*0.001
 			for event in pygame.event.get():
@@ -166,41 +162,7 @@ class projectOnScreen:
 					if event.key == pygame.K_ESCAPE:
 						pygame.quit()
 						sys.exit()
-				# if error is False:
-				# 	posNew = pygame.mouse.get_pos()
-				# 	mouse_mov[0] = posNew[0] - m_pos[0]
-				# 	mouse_mov[1] = posNew[1] - m_pos[1]
-				# 	if (posNew[0] < 2):
-				# 		pygame.mouse.set_pos((self.frame[0]-5, posNew[1]))
-				# 		m_pos = pygame.mouse.get_pos()
-				# 	if (posNew[0] > self.frame[0]-2):
-				# 		pygame.mouse.set_pos((5, posNew[1]))
-				# 		m_pos = pygame.mouse.get_pos()
-				# 	if (posNew[1] < 2):
-				# 		pygame.mouse.set_pos((posNew[0], self.frame[1]-5))
-				# 		m_pos = pygame.mouse.get_pos()
-				# 	if (posNew[1] > self.frame[1]-2):
-				# 		pygame.mouse.set_pos(((posNew[0], 5)))
-				# 		m_pos = pygame.mouse.get_pos()
-				# 	if m_pos != posNew:
-				# 		m_pos = posNew
-				# 		error = self.cam.mouse_events(mouse_mov, event)
-				# 	else:
-				# 		error = self.cam.mouse_events((0,0), event)
-				# else:
-				# 	error = self.cam.mouse_events(mouse_mov, event)
-
-				# posNew = pygame.mouse.get_pos()
-				# if (posNew[0] < 2):
-				# 	pygame.mouse.set_pos((self.frame[0]-5, posNew[1]))
-				# if (posNew[0] > self.frame[0]-2):
-				# 	pygame.mouse.set_pos((5, posNew[1]))
-				# if (posNew[1] < 2):
-				# 	pygame.mouse.set_pos((posNew[0], self.frame[1]-5))
-				# if (posNew[1] > self.frame[1]-2):
-				# 	pygame.mouse.set_pos(((posNew[0], 5)))
-				# error = self.cam.mouse_events(mouse_mov, event)
-				error = self.cam.mouse_events(event)
+				self.cam.mouse_events(event)
 
 			screen.fill((200, 200, 200))
 			if edges:
@@ -220,11 +182,6 @@ class projectOnScreen:
 					self.spherical=True
 			self.cam.update(dt, key)
 
-			# t += dt
-			# if t >5000:
-			# 	t = 1
-
-
 class Cam:
 	def __init__(self, pos=(1,1,1)):
 		self.z_axis = np.array([0,0,1])
@@ -237,14 +194,13 @@ class Cam:
 												# and z projects to y_pixel
 		self.pitch_vec = np.cross(self.azimuthal_vec, self.roll_vec)
 		self.sensitivity = 800.0
-	def mouse_events(self, event):#, m_pos, event):
+	def mouse_events(self, event):
 		try:
 			x, y = event.rel
 			error = True
 		except Exception as e:
 			error = True
-			#print(error)
-			x, y = 0,0#m_pos
+			x, y = 0,0
 		else:
 			pass
 		finally:
@@ -255,20 +211,11 @@ class Cam:
 			self.rot_x = 0
 		if abs(self.rot_y)>0.6125:
 			self.rot_y = 0
-		# x = x/self.sensitivity
-		# y = y/self.sensitivity
-		# if abs(x)>0.6125:
-		# 	x = 0
-		# if abs(y)>0.6125:
-		# 	y = 0
-		# self.rot_x -= x
-		# self.rot_y += y
 		self.roll_vec = quaternions.qrot_vec(self.roll_vec, self.rot_x, self.z_axis) # rotating about z-axis
 		self.azimuthal_vec = quaternions.qrot_vec(self.azimuthal_vec, self.rot_x, self.z_axis)# rotating about z-axiz
 		self.pitch_vec = quaternions.qrot_vec(self.pitch_vec, self.rot_x, self.z_axis)# rotating about z-axiz
 		self.roll_vec = quaternions.qrot_vec(self.roll_vec, self.rot_y, self.pitch_vec) # rotating about z-axis
 		self.azimuthal_vec = quaternions.qrot_vec(self.azimuthal_vec, self.rot_y, self.pitch_vec) # rotating about z-axis
-		#return error
 
 	def update(self, dt, key):
 		s = dt*5
@@ -321,7 +268,6 @@ if __name__ == "__main__":
 			for j in range(len(value2)):
 				value2[j] += i*8
 			edges.append(value2)
-	#print(edges)
 
 	myscreen = projectOnScreen((1000, 600),Cam(pos=(0,0,5)), vertices, edges, spherical=False, node_color=(200, 0, 0))
 	myscreen.run(edges=True, nodes=False, axis=False)
