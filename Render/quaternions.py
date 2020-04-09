@@ -26,7 +26,9 @@ class Quaternions:
                 self.angle = args[0]
                 self.vec = np.array(args[1])
                 self.vec_norm = np.linalg.norm(self.vec)
-                if self.vec_norm != 1:
+                if self.vec_norm<1e-14:
+                    self.vector = np.array([0,0,0])
+                elif self.vec_norm != 1:
                     self.vec = self.vec / self.vec_norm  # converting into unit quat...
                 self.quat = np.array(
                     [math.cos(self.angle), 
@@ -43,9 +45,15 @@ class Quaternions:
                 self.z = args[0][3]
                 self.quat = np.array([self.w, self.x, self.y, self.z])  # defining quat...
                 self.norm = np.linalg.norm(self.quat)
-                self.angle = math.acos(self.w / self.norm)
-                self.angle_deg = math.degrees(math.acos(self.w / self.norm))
-                self.vec_norm = np.linalg.norm(np.array([self.x, self.y, self.z]))
+                if self.norm<1e-15:
+                    self.quat = np.array([0,0,0,0])
+                    self.angle = math.acos(0)
+                    self.angle_deg = math.degrees(math.acos(0))
+                    self.vec_norm = 0
+                else:
+                    self.angle = math.acos(self.w / self.norm)
+                    self.angle_deg = math.degrees(math.acos(self.w / self.norm))
+                    self.vec_norm = np.linalg.norm(np.array([self.x, self.y, self.z]))
                 #self.quat_ang = f"{self.norm}[(cos({self.angle * (180 / np.pi)}), sin({self.angle * (180 / np.pi)})({self.x / self.vec_norm}i, {self.x / self.vec_norm}j, {self.x / self.vec_norm}k)]"
                 self.quat_form = f"{self.w}, ({self.x}i, {self.y}j, {self.z}k)"  # to print quat into its format...
 
@@ -135,12 +143,12 @@ if __name__ == '__main__':
     q_add = qadd(q1, q2)
     q_add.details()
 
-    rotation = math.pi/4
-    axis = np.array([1,0,0])
-    vector = [0,0,1]
+    rotation = math.pi/2
+    axis = np.array([0,0,1])
+    vector = [1,0,0]
 
-    rot_vec_1 = qrot_quat(Quaternions(rotation/2, axis), vec2quat(vector), point=np.array([1,1,1]))
-    rot_vec_2 = qrot_vec(vector, rotation, axis, point=np.array([1,1,1]))
-    print(rot_vec_1)
+    #rot_vec_1 = qrot_quat(Quaternions(rotation/2, axis), vec2quat(vector), point=np.array([1,1,1]))
+    rot_vec_2 = qrot_vec(vector, rotation, axis)
+    #print(rot_vec_1)
     print(rot_vec_2)
 
