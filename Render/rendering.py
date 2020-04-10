@@ -2,10 +2,11 @@ import pygame
 import sys, math, time
 import quaternions
 import numpy as np
+import mapConversion
 
 
 class projectOnScreen:
-	def __init__(self, frame, cam, nodes, edges, faces, spherical=False, node_color=(200, 0, 0), edge_color=(0, 0, 0)):
+	def __init__(self, frame, cam, nodes, edges, faces, spherical=False, node_color=(200, 0, 0), edge_color=(0, 0, 0), face_color=None):
 		self.coordinates = np.array([1,1,1])
 		self.frame = frame
 		self.center_x, self.center_y = self.frame[0] * 0.5, self.frame[1] * 0.5
@@ -17,6 +18,7 @@ class projectOnScreen:
 		self.edge_color = edge_color
 		self.nodes = nodes
 		self.node_color = node_color
+		self.face_color = face_color
 
 	# shifting coordinate system...
 	def translate(self):
@@ -98,7 +100,12 @@ class projectOnScreen:
 		self.project()
 
 	def render_faces(self, screen, faces, vertices, color=None):
-		colors = ((200, 0, 0), (0, 200, 0), (0, 0, 200), (200, 200, 0), (0, 200, 200), (200, 0, 200), (0, 0, 0))
+		color = self.face_color
+		if color:
+			colors = [color]
+		else:
+			colors = ((200, 100, 50), (10, 200, 90), (50, 40, 200), (100, 200, 80), (158, 197, 145), (159, 40, 200), (110, 110, 110))
+		c = len(colors)
 		sort_face = []
 		for i, face in enumerate(faces):
 			mean = np.array([0,0,0], dtype=np.float64)
@@ -111,7 +118,7 @@ class projectOnScreen:
 				mean += np.array(self.coordinates)
 				new_face.append(self.projected_coordinates)
 			new_face = self.faceVisiblePoint(visible_points, new_face)
-			sort_face.append((new_face, np.linalg.norm(mean/4), colors[i%6]))
+			sort_face.append((new_face, np.linalg.norm(mean/4), colors[i%c]))
 		sort_face.sort(key=lambda x: x[1], reverse=True)
 
 		for face in sort_face:
@@ -146,8 +153,8 @@ class projectOnScreen:
 			temp.append((i, self.projected_coordinates))
 			if self.projected_coordinates[2] == 1:
 				pygame.draw.circle(screen, color, self.projected_coordinates[:2], 1, 0)
-				# font = pygame.font.Font('freesansbold.ttf', 12)
-				# text = font.render(f"{i} {self.projected_coordinates[2]}", True,(0,0,0))
+				# font = pygame.font.Font('freesansbold.ttf', 18)
+				# text = font.render(f"{i}", True,(0,0,0))
 				# textRect = text.get_rect()
 				# textRect.center = (self.projected_coordinates[:2])
 				# screen.blit(text, textRect)
@@ -272,7 +279,7 @@ class Cam:
 	def update(self, key):
 		self.pos = np.array(self.pos, dtype=np.float64)
 		if key[pygame.K_LSHIFT]:
-			s = 1.5*self.factorForTranslation
+			s = 4*self.factorForTranslation
 			if key[pygame.K_a]: self.pos -= self.pitch_vec*s
 			if key[pygame.K_s]: self.pos -= self.roll_vec*s
 			if key[pygame.K_w]: self.pos += self.roll_vec*s
@@ -280,7 +287,7 @@ class Cam:
 			if key[pygame.K_q]: self.pos += self.azimuthal_vec*s
 			if key[pygame.K_e]: self.pos -= self.azimuthal_vec*s
 		else:
-			s = 2.3*self.factorForTranslation
+			s = 10*self.factorForTranslation
 			if key[pygame.K_a]: self.pos -= self.pitch_vec*s
 			if key[pygame.K_s]: self.pos -= self.roll_vec*s
 			if key[pygame.K_w]: self.pos += self.roll_vec*s
@@ -294,70 +301,73 @@ class Cam:
 			self.azimuthal_vec -= np.array([1,0,0])
 
 if __name__ == "__main__":
-	cube = ((-1, -1, -1), (1, -1, -1), (1, 1, -1), (-1, 1, -1),
-					(-1, -1, 1), (1, -1, 1), (1, 1, 1), (-1, 1, 1))
+	# cube = ((-1, -1, -1), (1, -1, -1), (1, 1, -1), (-1, 1, -1),
+	# 				(-1, -1, 1), (1, -1, 1), (1, 1, 1), (-1, 1, 1))
 
-	cube_edges = ((0, 1), (1, 2), (2, 3), (3, 0),
-			 (0, 4), (1, 5), (2, 6), (3, 7),
-			 (4, 5), (5, 6), (6, 7), (7, 4))
+	# cube_edges = ((0, 1), (1, 2), (2, 3), (3, 0),
+	# 		 (0, 4), (1, 5), (2, 6), (3, 7),
+	# 		 (4, 5), (5, 6), (6, 7), (7, 4))
 
-	#                  -z            z              -x           x             -y            y
-	cube_faces = ((0, 1, 2, 3), (4, 5, 6, 7), (0, 4, 7, 3), (1, 5, 6, 2), (0, 1, 5, 4), (3, 2, 6, 7))
-	cube_faces_X = ((0, 1, 2, 3), (4, 5, 6, 7), (0, 1, 5, 4), (3, 2, 6, 7))
-	cube_faces_Y = ((0, 1, 2, 3), (4, 5, 6, 7), (0, 4, 7, 3), (1, 5, 6, 2))
+	# #                  -z            z              -x           x             -y            y
+	# cube_faces = ((0, 1, 2, 3), (4, 5, 6, 7), (0, 4, 7, 3), (1, 5, 6, 2), (0, 1, 5, 4), (3, 2, 6, 7))
+	# cube_faces_X = ((0, 1, 2, 3), (4, 5, 6, 7), (0, 1, 5, 4), (3, 2, 6, 7))
+	# cube_faces_Y = ((0, 1, 2, 3), (4, 5, 6, 7), (0, 4, 7, 3), (1, 5, 6, 2))
 
-	vertices = []
-	edges = []
-	faces = []
+	# vertices = []
+	# edges = []
+	# faces = []
 
-	for c_nodes in cube:
-		value = list(c_nodes[:])
-		vertices.append(value)
+	# for c_nodes in cube:
+	# 	value = list(c_nodes[:])
+	# 	vertices.append(value)
 
-	for i in range(1,4):
-		for c_nodes in cube:
-			value = list(c_nodes[:])
-			value[0] += i*2
-			vertices.append(value)
+	# for i in range(1,4):
+	# 	for c_nodes in cube:
+	# 		value = list(c_nodes[:])
+	# 		value[0] += i*2
+	# 		vertices.append(value)
 
-	for i in range(1,4):
-		for c_nodes in cube:
-			value = list(c_nodes[:])
-			value[1] += i*2
-			vertices.append(value)
+	# for i in range(1,4):
+	# 	for c_nodes in cube:
+	# 		value = list(c_nodes[:])
+	# 		value[1] += i*2
+	# 		vertices.append(value)
 
-	for i, face in enumerate(cube_faces):
-		if i == 3 or i == 5:
-			continue
-		else:
-			faces.append(face)
+	# for i, face in enumerate(cube_faces):
+	# 	if i == 3 or i == 5:
+	# 		continue
+	# 	else:
+	# 		faces.append(face)
 
-	for i in range(1,4):
-		for c_faces in cube_faces_X:
-			value3 = list(c_faces[:])
-			for k in range(len(value3)):
-				value3[k] += i*8
-			faces.append(value3)
+	# for i in range(1,4):
+	# 	for c_faces in cube_faces_X:
+	# 		value3 = list(c_faces[:])
+	# 		for k in range(len(value3)):
+	# 			value3[k] += i*8
+	# 		faces.append(value3)
 
-	for i in range(4,7):
-		for c_faces in cube_faces_Y:
-			value3 = list(c_faces[:])
-			for k in range(len(value3)):
-				value3[k] += i*8
-			faces.append(value3)
+	# for i in range(4,7):
+	# 	for c_faces in cube_faces_Y:
+	# 		value3 = list(c_faces[:])
+	# 		for k in range(len(value3)):
+	# 			value3[k] += i*8
+	# 		faces.append(value3)
 
-	for i in range(7):
-		for c_edge in cube_edges:
-			value2 = list(c_edge[:])
-			for j in range(len(value2)):
-				value2[j] += i*8
-			edges.append(value2)
+	# for i in range(7):
+	# 	for c_edge in cube_edges:
+	# 		value2 = list(c_edge[:])
+	# 		for j in range(len(value2)):
+	# 			value2[j] += i*8
+	# 		edges.append(value2)
 
-	myscreen = projectOnScreen((1000, 600),Cam(pos=(0,0,5)), cube, cube_edges, cube_faces, spherical=False, node_color=(200, 0, 0))
-	myscreen.run(faces=True, edges=True, nodes=True, axis=True, FPS=30)
 
-	# myscreen = projectOnScreen((1000, 600),Cam(pos=(0,0,5)), vertices, edges, faces, spherical=False, node_color=(200, 0, 0))
-	# myscreen.run(faces=True, edges=False, nodes=False, axis=True, FPS=60)
+	vertices, edges, faces = mapConversion.dataFunction(file="Maze.txt", factor=80, plane1=False, plane2=False)	
+
+	# myscreen = projectOnScreen((1000, 600),Cam(pos=(0,0,5)), cube, cube_edges, cube_faces, spherical=False, node_color=(200, 0, 0))
+	# myscreen.run(faces=True, edges=True, nodes=True, axis=True, FPS=30)
+
+	myscreen = projectOnScreen((1000, 600),Cam(pos=(0,0,0.5)), vertices, edges, faces, spherical=False,)# node_color=(200, 0, 0), face_color=(150, 150, 100))
+	myscreen.run(faces=True, edges=False, nodes=False, axis=False, FPS=60)
 
 	# planep = ((0,0,0), (50,0,0), (50,50,0), (0,50,0))
 	# edgep = ((0,1), (1,2), (2,3), (3,0))
