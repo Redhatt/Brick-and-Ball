@@ -1,20 +1,27 @@
 import re
+from lineSpliter import lineSplit
 
-def dataFunction(file='mapFile.txt', factor=100, plane1=True, plane2=False):
+def dataFunction(file='mapFile.txt', factor=40, plane1=True, plane2=False):
 	vertices = []
 	edges = []
 	faces = []
-	height1 = 0
+	height1 = -2
 	height2 = 1
 
 	with open(file, 'r')as fp:
 		data = fp.read()
 		info = re.findall(r'\-?\+?\d+', data)
-		lines = []
+		old_lines = []
 		line = []
 		for i, j in enumerate(info):
-			lines.append(int(j)//factor)
+			old_lines.append(int(j)//factor)
 		count = 0
+
+		lines = []
+		for i in range(0, len(old_lines)-3, 4):
+			lineSplit([old_lines[i], old_lines[i+1]], [old_lines[i+2], old_lines[i+3]], lines, factor)
+		# print(old_lines)
+		# print(lines)
 		for i in range(0, len((lines))-3, 4):
 			vertix1 = [lines[i], lines[i+1]]
 			vertix2 = [lines[i+2], lines[i+3]]
@@ -40,10 +47,10 @@ def dataFunction(file='mapFile.txt', factor=100, plane1=True, plane2=False):
 	if plane1:
 		maxx, minn = max(lines), min(lines)
 		total = maxx-minn
-		vertices.append((total, total, height1))
-		vertices.append((-total, total, height1))
-		vertices.append((-total, -total, height1))
-		vertices.append((total, -total, height1))
+		vertices.append([total, total, height1])
+		vertices.append([-total, total, height1])
+		vertices.append([-total, -total, height1])
+		vertices.append([total, -total, height1])
 		edges.append([count, count+1])
 		edges.append([count+1, count+2])
 		edges.append([count+2, count+3])
@@ -51,10 +58,10 @@ def dataFunction(file='mapFile.txt', factor=100, plane1=True, plane2=False):
 		faces.append([count, count+1, count+2, count+3])
 		count+=4
 	if plane2:
-		vertices.append((total, total, height2))
-		vertices.append((-total, total, height2))
-		vertices.append((-total, -total, height2))
-		vertices.append((total, -total, height2))
+		vertices.append([total, total, height2])
+		vertices.append([-total, total, height2])
+		vertices.append([-total, -total, height2])
+		vertices.append([total, -total, height2])
 		edges.append([count, count+1])
 		edges.append([count+1, count+2])
 		edges.append([count+2, count+3])
@@ -64,5 +71,5 @@ def dataFunction(file='mapFile.txt', factor=100, plane1=True, plane2=False):
 
 if __name__ == "__main__":
 	v,e,f = dataFunction()
-	print(v)
+	print(len(v)-4)
 

@@ -42,7 +42,7 @@ while run:
                 if len(lines)>=2:
                     for i in range(0, len(lines), 2):
                         value1, value2 = lines[i], lines[i+1]
-                        file.write(str((-value1[0]+center[0], value1[1]-center[1]))+ " "+str((value2[0]-center[0], value2[1]-center[1])))
+                        file.write(str((-value1[0]+center[0], value1[1]-center[1]))+ " "+str((-value2[0]+center[0], value2[1]-center[1])))
                         #file.write("@")
 
 
