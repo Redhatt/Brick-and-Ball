@@ -361,13 +361,13 @@ if __name__ == "__main__":
 	# 		edges.append(value2)
 
 
-	vertices, edges, faces = mapConversion.dataFunction(file="Maze.txt", factor=80, plane1=False, plane2=False)	
+	vertices, edges, faces = mapConversion.dataFunction(file="inferno2.txt", factor=30, plane1=False, plane2=False)	
 	# vertices, edges, faces = mapConversion.dataFunction(factor=100, plane1=False, plane2=False)	
 
 	# myscreen = projectOnScreen((1000, 600),Cam(pos=(0,0,5)), cube, cube_edges, cube_faces, spherical=False, node_color=(200, 0, 0))
 	# myscreen.run(faces=True, edges=True, nodes=True, axis=True, FPS=30)
 
-	myscreen = projectOnScreen((1500, 600),Cam(pos=(0,0,0.5)), vertices, edges, faces, spherical=False,)# node_color=(200, 0, 0), face_color=(150, 150, 100))
+	myscreen = projectOnScreen((1500, 600),Cam(pos=(0,0,0.5)), vertices, edges, faces, spherical=False, node_color=(200, 0, 0), face_color=(150, 150, 100))
 	myscreen.run(faces=True, edges=False, nodes=False, axis=False, FPS=60)
 
 	# planep = ((0,0,0), (50,0,0), (50,50,0), (0,50,0))
