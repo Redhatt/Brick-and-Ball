@@ -301,73 +301,73 @@ class Cam:
 			self.azimuthal_vec -= np.array([1,0,0])
 
 if __name__ == "__main__":
-	# cube = ((-1, -1, -1), (1, -1, -1), (1, 1, -1), (-1, 1, -1),
-	# 				(-1, -1, 1), (1, -1, 1), (1, 1, 1), (-1, 1, 1))
+	cube = ((-1, -1, -1), (1, -1, -1), (1, 1, -1), (-1, 1, -1),
+					(-1, -1, 1), (1, -1, 1), (1, 1, 1), (-1, 1, 1))
 
-	# cube_edges = ((0, 1), (1, 2), (2, 3), (3, 0),
-	# 		 (0, 4), (1, 5), (2, 6), (3, 7),
-	# 		 (4, 5), (5, 6), (6, 7), (7, 4))
+	cube_edges = ((0, 1), (1, 2), (2, 3), (3, 0),
+			 (0, 4), (1, 5), (2, 6), (3, 7),
+			 (4, 5), (5, 6), (6, 7), (7, 4))
 
-	# #                  -z            z              -x           x             -y            y
-	# cube_faces = ((0, 1, 2, 3), (4, 5, 6, 7), (0, 4, 7, 3), (1, 5, 6, 2), (0, 1, 5, 4), (3, 2, 6, 7))
-	# cube_faces_X = ((0, 1, 2, 3), (4, 5, 6, 7), (0, 1, 5, 4), (3, 2, 6, 7))
-	# cube_faces_Y = ((0, 1, 2, 3), (4, 5, 6, 7), (0, 4, 7, 3), (1, 5, 6, 2))
+	#                  -z            z              -x           x             -y            y
+	cube_faces = ((0, 1, 2, 3), (4, 5, 6, 7), (0, 4, 7, 3), (1, 5, 6, 2), (0, 1, 5, 4), (3, 2, 6, 7))
+	cube_faces_X = ((0, 1, 2, 3), (4, 5, 6, 7), (0, 1, 5, 4), (3, 2, 6, 7))
+	cube_faces_Y = ((0, 1, 2, 3), (4, 5, 6, 7), (0, 4, 7, 3), (1, 5, 6, 2))
 
-	# vertices = []
-	# edges = []
-	# faces = []
+	vertices = []
+	edges = []
+	faces = []
 
-	# for c_nodes in cube:
-	# 	value = list(c_nodes[:])
-	# 	vertices.append(value)
+	for c_nodes in cube:
+		value = list(c_nodes[:])
+		vertices.append(value)
 
-	# for i in range(1,4):
-	# 	for c_nodes in cube:
-	# 		value = list(c_nodes[:])
-	# 		value[0] += i*2
-	# 		vertices.append(value)
+	for i in range(1,4):
+		for c_nodes in cube:
+			value = list(c_nodes[:])
+			value[0] += i*2
+			vertices.append(value)
 
-	# for i in range(1,4):
-	# 	for c_nodes in cube:
-	# 		value = list(c_nodes[:])
-	# 		value[1] += i*2
-	# 		vertices.append(value)
+	for i in range(1,4):
+		for c_nodes in cube:
+			value = list(c_nodes[:])
+			value[1] += i*2
+			vertices.append(value)
 
-	# for i, face in enumerate(cube_faces):
-	# 	if i == 3 or i == 5:
-	# 		continue
-	# 	else:
-	# 		faces.append(face)
+	for i, face in enumerate(cube_faces):
+		if i == 3 or i == 5:
+			continue
+		else:
+			faces.append(face)
 
-	# for i in range(1,4):
-	# 	for c_faces in cube_faces_X:
-	# 		value3 = list(c_faces[:])
-	# 		for k in range(len(value3)):
-	# 			value3[k] += i*8
-	# 		faces.append(value3)
+	for i in range(1,4):
+		for c_faces in cube_faces_X:
+			value3 = list(c_faces[:])
+			for k in range(len(value3)):
+				value3[k] += i*8
+			faces.append(value3)
 
-	# for i in range(4,7):
-	# 	for c_faces in cube_faces_Y:
-	# 		value3 = list(c_faces[:])
-	# 		for k in range(len(value3)):
-	# 			value3[k] += i*8
-	# 		faces.append(value3)
+	for i in range(4,7):
+		for c_faces in cube_faces_Y:
+			value3 = list(c_faces[:])
+			for k in range(len(value3)):
+				value3[k] += i*8
+			faces.append(value3)
 
-	# for i in range(7):
-	# 	for c_edge in cube_edges:
-	# 		value2 = list(c_edge[:])
-	# 		for j in range(len(value2)):
-	# 			value2[j] += i*8
-	# 		edges.append(value2)
+	for i in range(7):
+		for c_edge in cube_edges:
+			value2 = list(c_edge[:])
+			for j in range(len(value2)):
+				value2[j] += i*8
+			edges.append(value2)
 
 
-	vertices, edges, faces = mapConversion.dataFunction(file="inferno2.txt", factor=30, plane1=False, plane2=False)	
+	# vertices, edges, faces = mapConversion.dataFunction(file="maze.txt", factor=20, plane1=False, plane2=False)	
 	# vertices, edges, faces = mapConversion.dataFunction(factor=100, plane1=False, plane2=False)	
 
 	# myscreen = projectOnScreen((1000, 600),Cam(pos=(0,0,5)), cube, cube_edges, cube_faces, spherical=False, node_color=(200, 0, 0))
 	# myscreen.run(faces=True, edges=True, nodes=True, axis=True, FPS=30)
 
-	myscreen = projectOnScreen((1500, 600),Cam(pos=(0,0,0.5)), vertices, edges, faces, spherical=False, node_color=(200, 0, 0), face_color=(150, 150, 100))
+	myscreen = projectOnScreen((1500, 600),Cam(pos=(0,0,0.5)), vertices, edges, faces, spherical=False, node_color=(200, 0, 0))
 	myscreen.run(faces=True, edges=False, nodes=False, axis=False, FPS=60)
 
 	# planep = ((0,0,0), (50,0,0), (50,50,0), (0,50,0))

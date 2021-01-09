@@ -5,7 +5,7 @@ def lineSplit(pos1, pos2, lis, factor):
 	point2 = np.array(pos2)
 	distance = np.linalg.norm(point2-point1)
 
-	if distance > 10:
+	if distance > 20:
 		new_point = (point1+point2)/2
 		lineSplit(pos1, new_point, lis, factor)
 		lineSplit(new_point, pos2, lis, factor)

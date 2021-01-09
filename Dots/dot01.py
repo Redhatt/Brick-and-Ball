@@ -6,7 +6,7 @@ import time
 run = True
 speed_limit = 50
 spawn = 100
-length , breadth = 1400, 1000
+length , breadth = 900, 500
 FPS = 60
 dot_width = 30
 dot_x, dot_y = random.randint(0, 900), random.randint(0, 700)
