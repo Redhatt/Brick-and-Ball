@@ -15,6 +15,7 @@ dim = np.array([500, 300])
 FPS = 60
 scale = 100
 
+# math funcitons
 def centeriod(vert: list):
     '''
     @param: vertices list of numpy.array type
@@ -28,6 +29,15 @@ def centeriod(vert: list):
         x += i[0]
         y += i[1]
     return np.array([x/n, y/n])
+
+def normal(a, b):
+    '''
+    @param:a-> normal to find against
+    @param:b-> nomral direction along
+    '''
+    p = np.array([a[1], -a[0]], dtype=np.float32)
+    if np.dot(p, b)<0: return -p
+    return p
 
 
 class polygon:
@@ -180,6 +190,21 @@ class polygon:
 
         self.translatation()
         self.rotation()
+
+    # finds furthest point in some direction
+    def find_furthest(self, direction=np.array([1.0, 0.0])):
+        '''
+        @param: direction-> directions in which to find the farthest point
+        ereturn: point-> 2D point (numpy.array shape (2, )) 
+        '''
+        max_d = -float('inf')
+        max_point = None
+        for vert in self.vert:
+            val = np.dot(vert, direction)
+            if val > max_d:
+                max_d = val
+                max_point = vert
+        return max_point
 
 
 # utility functions to stick text on screen

@@ -49,14 +49,107 @@ def SAT(a, b):
 	return True
 
 
+def GJK(a, b):
+	'''
+	@param: a-> shape A 
+	@param: b-> shape B
+	return: truth value of collision btw the shapes
+	'''
+	unit_x = np.array([1.0, -1.0], dtype=np.float32)
+	simplex_points = list()
+
+	sup = support(a, b, unit_x)
+	simplex_points.append(sup)
+	d = -sup
+
+	while True:
+		sup = support(a, b, d)
+		if np.dot(d, sup) <= 0:
+			return False
+
+		simplex_points.append(sup)
+
+		val, simplex_points, d = next_simplex(simplex_points, d)
+		if val: return True
+
+def support(a, b, d):
+	'''
+	@param: a-> shape A 
+	@param: b-> shape B
+	@param:dir-> direction (numpy.array shape (2, ))
+	returns: 2D point with max dot pord
+	'''
+	return a.find_furthest(d) - b.find_furthest(-d)
+
+# returns the simplex 
+def next_simplex(simplex_points, d):
+	if len(simplex_points) == 2: return line(simplex_points, d)
+	elif len(simplex_points) == 3: return triangle(simplex_points, d)
+	elif len(simplex_points) == 4: return tetrahedron(simplex_points, d) # not needed now, since 2D only.
+	return False, None, None
+
+def line(simplex_points, d):
+	# print('line')
+	a, b = simplex_points
+	ab = b - a
+	ao = -a
+
+	if same_dir(ab, ao):
+
+		# setting direction normal to ab in direction of ao
+		d = normal(ab, ao)
+		return False, simplex_points, d
+	
+	simplex_points = [a]
+	d = ao
+
+	return False, simplex_points, d
+
+def triangle(simplex_points, d):
+	a, b, c = simplex_points
+
+	ab = b - a 
+	ac = c - a 
+	ao = -a
+
+	# checking if origin is outside ac
+	# getting normal of ac in directions -ab
+	ac_n = normal(ac, -ab)
+
+	# checking if ao along ac_n, if yes its outside
+	if same_dir(ac_n, ao):
+
+		if same_dir(ac, ao):
+			# remove b from simplex
+			simplex_points = [a, c]
+			d = normal(ac, ao)
+			return False, simplex_points, d
+		else:
+			return line([a, b], d)
+
+	# if outside ab
+	else:
+		ab_n = normal(ab, -ac)
+
+		if same_dir(ab_n, ao):
+			return line([a, b], d)
+		else:
+			return True, simplex_points, d
+
+
+# truth value of vec in same direction to d.
+def same_dir(vec, d):
+	return np.dot(vec, d)>0
+
+
 
 if __name__ == '__main__':
-	v1 = [[1, 1], [3,1], [3,3], [1,3]] 
+	v1 = [[1, 1], [3,1], [3,3], [1,3], [0.5, 2]]
 	p = polygon(v1, 200, 200, color='green')
 	r = polygon(v1, 200, 200)
 	
-	shift = [2/1000, 1/1000]
-	turn = 0.01
+	shift = [6/1000, 0/1000]
+	turn = 0.05
 	
 	length, breadth = 1000, 700
 	pygame.init()
@@ -87,7 +180,10 @@ if __name__ == '__main__':
 		p.motion_dynamics(time())
 		r.motion_dynamics(time())
 
-		if SAT(r, p):
+		# if SAT(r, p):
+		# 	pygame.draw.rect(screen, colors['red'], (0, 0, length, breadth), 10)
+
+		if GJK(r, p):
 			pygame.draw.rect(screen, colors['red'], (0, 0, length, breadth), 10)
 
 		text(screen, f"FPS: {1000 // (ff)}, T: {ff} ms", 600, 10)
