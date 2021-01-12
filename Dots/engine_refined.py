@@ -7,15 +7,19 @@ ex = sys.exit
 #   Classes: (Ball, Polygon, Rectangle, Line)
 #   Methods: insertions_sort, text, update_collision, collision_detection, isCollision
 
-colors = {'red': (139, 0, 0), 'blue': (70, 20, 225), 'yellow': (120, 120, 0), 'white': (200, 200, 200),
-           'black': (10, 10, 10)}
+colors = {'red': (139, 0, 0), 'blue': (70, 20, 225), 'yellow': (120, 120, 0), 'white': (200, 200, 200), 
+          'green': (10, 150, 20), 'black': (10, 10, 10)}
 
 length, breadth = 1000, 700
 dim = np.array([500, 300])
 FPS = 60
 scale = 100
 
-def cm_cal(vert: list):
+def centeriod(vert: list):
+    '''
+    @param: vertices list of numpy.array type
+    return: numpy array -> centeriod of shape
+    '''
     x, y = 0, 0
     n = len(vert)
     if n == 0:
@@ -28,6 +32,14 @@ def cm_cal(vert: list):
 
 class polygon:
     def __init__(self, vert: list, mass: float, mi: float, vel=np.array([0, 0], dtype=np.float32), w=0, color='red'):
+        '''
+        @param:vert-> list a 2d list with each vertix's coordinates
+        @param:mass-> mass of the shape
+        @param:mi-> moment of inertia of shape
+        @param:vel-> initial velocity of the shape
+        @param:w-> initial angular velocity of shape
+        @param:color (string) color of the shape
+        '''
         self.color = colors[color]
 
         # mass inertia postions
@@ -46,13 +58,45 @@ class polygon:
         self.momentum = mass * self.vel
         self.ang_mom = mi * w
 
-        # center of mass
-        self.cm_pos = cm_cal(self.vert)
-        self.cm_pos_last = self.cm_pos
+        # center of mass and orient
+        self.cm_pos = centeriod(self.vert)
+        self.cm_pos_last = self.cm_pos.copy()
         self.cm_pos_ang = 0
         self.cm_pos_ang_last = 0
 
+    # to shift the shape
+    def shift(self, shift):
+        shift = np.array(shift)
 
+        self.cm_pos += shift
+        self.cm_pos_last += shift
+
+        for i in range(len(self.vert)):
+            self.vert[i] += shift
+
+    # to turn the shape
+    def turn(self, angle):
+        self.cm_pos_ang += angle
+        self.cm_pos_ang_last += angle
+
+        rot_mat = np.array([[np.cos(angle), - np.sin(angle)], [np.sin(angle), np.cos(angle)]])
+        for i in range(len(self.vert)):
+            vert = self.vert[i] - self.cm_pos
+            vert = rot_mat@vert
+            self.vert[i] = vert + self.cm_pos
+
+    # to place the shape at desired location
+    def place(self, pos):
+        pos = np.array(pos)
+        delta = pos - self.cm_pos
+        self.shift(delta)
+
+    # to tune the shape at desired orientation
+    def orient(self, angle):
+        delta =angle - self.cm_pos_ang
+        self.turn(delta)
+        
+    # draw utility method
     def draw(self, screen, cm=True):
         con = [(int(scale*i[0]), int(scale*i[1])) for i in self.vert]
         cen = (int(scale*self.cm_pos[0]), int(scale*self.cm_pos[1]))
@@ -60,12 +104,14 @@ class polygon:
         if cm:
             pygame.draw.circle(screen, colors['black'], cen, 2)
 
-    def translate(self):
+    # translation method used in motion dynamics
+    def translatation(self):
         delta = self.cm_pos - self.cm_pos_last
         for i in range(len(self.vert)):
             self.vert[i] += delta
 
-    def rotate(self):
+    # rotation method used in motion dynamics
+    def rotation(self):
         angle = self.cm_pos_ang - self.cm_pos_ang_last
         rot_mat = np.array([[np.cos(angle), - np.sin(angle)], [np.sin(angle), np.cos(angle)]])
         for i in range(len(self.vert)):
@@ -73,14 +119,27 @@ class polygon:
             vert = rot_mat@vert
             self.vert[i] = vert + self.cm_pos
 
+    # to simulate impulse force on the shape
     def impulse_force(self, p):
+        '''
+        @param: p-> impulse momentum (numpy.array with shape (2, ))
+        '''
         self.vel += p/self.mass
 
+    # to simulate impulse turque on the shape
     def impulse_torque(self, t):
+        '''
+        @param: t-> impulse anglur momentum (float)
+        '''
         self.w += t/self.mi
 
+    # utitlity method to calculate the both linear and angular postions and velocities of the shape
     def motion_dynamics(self, t, dt=1, forces_func=None, torque_func=None):
-
+        '''
+        @param: t-> time in msec (int)
+        @param: dt-> delta time in msec (int)
+        TODO: yet to decide
+        '''
         # storing last postions 
         e = self.cm_pos
         a = self.cm_pos_ang
@@ -119,24 +178,28 @@ class polygon:
         self.cm_pos_last = e
         self.cm_pos_ang_last = a
 
-        self.translate()
-        self.rotate()
-
-def Collide(a, b):
-    pass
-
-def collision_detection(collection):
-    pass
+        self.translatation()
+        self.rotation()
 
 
-
+# utility functions to stick text on screen
 def text(screen, text, x, y, size=10, font_type='freesansbold.ttf', color=colors['black']):
+    '''
+    @param:screen object 
+    @param:text to stick 
+    @param:x rect position
+    @param:y rect position
+    @param:size size of the text
+    @param:font_type
+    @param:color
+    '''
     text = str(text)
     font = pygame.font.Font(font_type, size)
     text = font.render(text, True, color)
     screen.blit(text, (x, y))
 
  
+ # TODO: froces yet to decide 
 def spring(t, pos, vel, mass):
     # origin
     org = np.array([2, 2], dtype=np.float32)
@@ -167,6 +230,13 @@ def gravity_world(t, pos, vel, mass):
     g = 0.001
     return np.array([0, g*mass], dtype=np.float32)
 
+
+def collision(container):
+      # sort
+      container.sort(key=lambda x: (x.cm_pos[0], cm_pos[1]))
+      for i in range(len(container)-1):
+        # if SAT()
+        pass
 
 if __name__ == '__main__':
     ve = [[1, 1], [2, 1], [2, 4], [1, 4], [0.5, 2]]
@@ -202,4 +272,3 @@ if __name__ == '__main__':
         end = time()
         if (time()%10 == 0): 
             ff = end - start
-            

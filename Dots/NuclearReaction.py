@@ -1,14 +1,21 @@
 from  engine_refined import *
+from collision import SAT
 
-gravity_world.g = 0
+vep = [[1, 1], [2, 1], [3, 2.5], [2, 4], [0.5, 2]]
+ver = [[1, 1], [2, 1], [2, 4], [1, 5], [0.5, 2]]
 
-ve = [[1, 1], [2, 1], [2, 4], [1, 4], [0.5, 2]]
-p = polygon(ve, 200, 200)
+p = polygon(vep, 200, 200, color='blue')
+r = polygon(ver, 200, 200, color='green')
 
 # impulses
 # p.impulse_force(np.array([100, 50], dtype=np.float32))
 # p.impulse_torque(10)
 
+r.shift(shift=np.array([2, 2]))
+r.impulse_force(np.array([1, 1], dtype=np.float32))
+
+length, breadth = 1000, 700
+contianer = [p, r]
 pygame.init()
 pygame.font.init()
 pygame.display.set_caption("Nuclear Reaction !")
@@ -28,8 +35,16 @@ while run:
 
     screen.fill(colors['white'])
 
-    p.draw(screen)    
-    p.motion_dynamics(time(), forces_func=[gravity_world], torque_func=[ang_spring])
+    for shape in contianer:
+        shape.draw(screen)
+        shape.motion_dynamics(time(), forces_func=[spring], torque_func=[ang_spring])
+        # shape.motion_dynamics(time(), torque_func=[ang_spring])
+
+    if len(contianer)>1:
+        for i in range(len(contianer)-1):
+            if SAT(contianer[i], contianer[i+1]):
+                pygame.draw.rect(screen, colors['red'], (0, 0, length, breadth), 2)
+
     text(screen, f"FPS: {1000 // (ff)}, T: {ff} ms", 600, 10)
     pygame.display.flip()
     end = time()
