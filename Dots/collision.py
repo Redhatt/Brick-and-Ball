@@ -2,6 +2,8 @@
 import numpy as np
 from engine_refined import *
 
+from time import time as t
+
 # only for polygon detection.
 def SAT(a, b):
 
@@ -94,19 +96,28 @@ def line(simplex_points, d):
 	ab = b - a
 	ao = -a
 
-	if same_dir(ab, ao):
+	# comment code also works but good for 3D stuff
+	# # ----------------------------------------------
+	# if same_dir(ab, ao):
 
-		# setting direction normal to ab in direction of ao
-		d = normal(ab, ao)
-		return False, simplex_points, d
+	# 	# setting direction normal to ab in direction of ao
+	# 	d = normal(ab, ao)
+	# 	return False, simplex_points, d
 	
-	simplex_points = [a]
-	d = ao
+	# simplex_points = [a]
+	# d = ao
+	# return False, simplex_points, d
+	# # ----------------------------------------------
 
+	# optimised code for 2D 
+	# # ----------------------------------------------
+	d = normal(ab, ao)
 	return False, simplex_points, d
+	# # ----------------------------------------------
+
 
 def triangle(simplex_points, d):
-	a, b, c = simplex_points
+	c, b, a = simplex_points
 
 	ab = b - a 
 	ac = c - a 
@@ -119,20 +130,42 @@ def triangle(simplex_points, d):
 	# checking if ao along ac_n, if yes its outside
 	if same_dir(ac_n, ao):
 
-		if same_dir(ac, ao):
-			# remove b from simplex
-			simplex_points = [a, c]
-			d = normal(ac, ao)
-			return False, simplex_points, d
-		else:
-			return line([a, b], d)
+		# comment code also works but good for 3D stuff
+		# # ----------------------------------------------
+		# if same_dir(ac, ao):
+		# 	# remove b from simplex
+		# 	simplex_points = [a, c]
+		# 	d = normal(ac, ao)
+		# 	return False, simplex_points, d
+		# else:
+		# 	return line([a, b], d)
+		# # ----------------------------------------------
+
+		# optimised code for 2D 
+		# ----------------------------------------------
+		simplex_points = [a, c]
+		d = ac_n
+		return False, simplex_points, d
+		# ----------------------------------------------
 
 	# if outside ab
 	else:
 		ab_n = normal(ab, -ac)
 
 		if same_dir(ab_n, ao):
-			return line([a, b], d)
+
+			# comment code also works but good for 3D stuff
+			# # ----------------------------------------------
+			# return line([a, b], d)
+			# # ----------------------------------------------
+
+			# optimised code for 2D 
+			# ----------------------------------------------
+			simplex_points = [a, b]
+			d = ab_n
+			return False, simplex_points, d
+			# ----------------------------------------------
+
 		else:
 			return True, simplex_points, d
 
@@ -149,7 +182,7 @@ if __name__ == '__main__':
 	r = polygon(v1, 200, 200)
 	
 	shift = [6/1000, 0/1000]
-	turn = 0.05
+	turn = 0.1
 	
 	length, breadth = 1000, 700
 	pygame.init()
