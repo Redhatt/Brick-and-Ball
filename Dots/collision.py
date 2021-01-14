@@ -18,7 +18,7 @@ def broad_collision_check(a, b, x=np.array([1.0, 0.0]), y=np.array([0.0, 1.0])):
 	return True
 
 
-# SAT algorithm 
+# SAT algorithm--------------------------------------------------
 def SAT(a, b):
 	'''
 	@param: a-> shape A 
@@ -51,8 +51,10 @@ def SAT(a, b):
 			else:
 				return False
 	return True
+# ---------------------------------------------------------------
 
 
+# GJK and EPA ---------------------------------------------------
 # utility function for GJK 
 def next_simplex(simplex, d):
 	'''
@@ -179,14 +181,31 @@ def GJK(a, b):
 		val, simplex, d = next_simplex(simplex, d)
 		if val: return True , simplex
 
+
 # findnig contact points
 def find_contact(a, b, n, tol=0.01):
-	index = a.find_furthest(n, index=True)
-	s1 = len(a.vert)
-	v1, v2, v3 = a.vert[(index - 1)%s1], a.vert[(index)], a.vert[(index+1)%s1]
-	if abs(np.dot(v1-v2, n)) < tol or abs(np.dot(v3-v2, n)) < tol:
-		return b.find_furthest(-n)
-	return a.vert[index]
+	if a.type == 'Polygon' and b.type == 'Polygon':
+		index = a.find_furthest(n, index=True)
+		s1 = len(a.vert)
+		v1, v2, v3 = a.vert[(index - 1)%s1], a.vert[(index)], a.vert[(index+1)%s1]
+		if abs(np.dot(v1-v2, n)) < tol or abs(np.dot(v3-v2, n)) < tol:
+			return b.find_furthest(-n)
+		return a.vert[index]
+
+	elif a.type == 'Circle':
+		return a.find_furthest(align(n, b.cm_pos - a.cm_pos))
+
+	elif b.type == 'Circle':
+		return b.find_furthest(align(n, a.cm_pos - b.cm_pos))
+
+	# elif (a.type == 'Circle' and b.type == 'Polygon') or \
+	# 	(a.type == 'Polygon' and b.type == 'Circle'):
+	# 	if a.type == 'circle':
+	# 		return a.find_furthest(n)
+
+
+
+
 
 
 # utility function for EPA
@@ -200,7 +219,7 @@ def closest_edge(simplex):
 	size = len(simplex)
 	for i in range(size):
 		v1, v2 = simplex[i], simplex[(i+1)%size]
-		n = normal(v2 - v1, v1, normalize=True)
+		n = normal(v2 - v1, v1, nrm=True)
 		d = np.dot(n, v1)
 		if d < min_dis:
 			min_dis = d
@@ -216,7 +235,8 @@ def EPA(simplex, a, b, tol=0.0001):
 	@param: a-> shape A 
 	@param: b-> shape B
 	'''
-	max_size = len(a.vert) * len(b.vert)
+	# max_size = len(a.vert) * len(b.vert)
+	max_size = 10
 	while True:
 		# get edge_normal closest to origin and its distance
 		n, dis, index = closest_edge(simplex)
@@ -226,6 +246,7 @@ def EPA(simplex, a, b, tol=0.0001):
 			return n, dis + tol, find_contact(a, b, n)
 		else:
 			simplex.insert(index, p)
+# ---------------------------------------------------------------
 
 
 def collision_handler(container):
@@ -251,6 +272,7 @@ def collision_handler(container):
 				nor, dis, p = EPA(simplex, a, b)
 				solver(a, b, nor, dis, p)
 				contacts.append(p)
+
 	return contacts
 
 

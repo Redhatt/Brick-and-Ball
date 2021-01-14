@@ -1,4 +1,4 @@
-from  engine_refined import *
+from engine_refined import *
 from collision import *
 
 length, breadth = 1300, 800
@@ -13,8 +13,9 @@ top = [[OX, OY], [X, OY]]
 lef = [[OX, OY], [OX, Y]]
 
 p = Polygon(vep, 200, 200, color='blue', e=1)
-r = Polygon(ver, 200, 200, color='green', e=1)
-r.shift([3, 1])
+# r = Polygon(ver, 200, 200, color='green', e=1)
+r = Cirlce([2, 2], 1, 200, 200, color='green', e=1)
+r.place([X/2, Y/2])
 
 wall_top = Line(top, 1e9, 1e9, color='cyan', e=1, move=False)
 wall_down = Line(top, 1e9, 1e9, color='cyan', e=1, move=False)
@@ -50,7 +51,7 @@ while run:
 
         if e.type == pygame.MOUSEMOTION:
                 x, y = e.pos
-                # p.place([x / scale, y/scale])
+                # r.place([x / scale, y/scale])
                 # p.impulse_force(0.1*(np.array([x / scale, y/scale]) - p.cm_pos))
                 # r.impulse_force(0.1*(np.array([x / scale, y/scale]) - r.cm_pos))
 
@@ -79,7 +80,7 @@ while run:
         r.impulse_force(np.array([0, 0.1]))
         # r.shift(np.array([0, 0.1]))
 
-    screen.fill(colors['white'])
+    screen.fill('grey')
 
     for shape in contianer:
         shape.motion_dynamics(time())
@@ -88,7 +89,7 @@ while run:
     points = collision_handler(contianer)
     draw_points(screen, points)
 
-    text(screen, f"FPS: {1000 // (ff)}, T: {ff} ms", 600, 10, color=colors['yellow'])
+    text(screen, f"FPS: {1000 // (ff)}, T: {ff} ms", length-150, 10, color=clr('black'))
     pygame.display.flip()
     end = time()
     if (time()%10 == 0): 
