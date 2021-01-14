@@ -198,15 +198,12 @@ def find_contact(a, b, n, tol=0.01):
 	elif b.type == 'Circle':
 		return b.find_furthest(align(n, a.cm_pos - b.cm_pos))
 
-	# elif (a.type == 'Circle' and b.type == 'Polygon') or \
-	# 	(a.type == 'Polygon' and b.type == 'Circle'):
-	# 	if a.type == 'circle':
-	# 		return a.find_furthest(n)
-
-
-
-
-
+	elif a.type == 'Line':
+		if abs(np.dot(a.along(), n))<tol:
+			return b.find_furthest(align(n, a.cm_pos - b.cm_pos))
+		else:
+			return a.find_furthest(align(n, b.cm_pos - a.cm_pos))
+			
 
 # utility function for EPA
 def closest_edge(simplex):

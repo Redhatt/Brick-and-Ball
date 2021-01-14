@@ -9,7 +9,7 @@ FPS = 60
 scale = 100
 
 class Polygon:
-    def __init__(self, vert: list, mass: float, mi: float, vel=np.array([0, 0], dtype=np.float32), w=0, e=1, move=True, color=None):
+    def __init__(self, vert: list, mass: float, mi: float, vel=np.array([0, 0], dtype=np.float32), w=0, e=1, move=True, color=None, type='Polygon'):
         '''
         @param:vert-> list a 2d list with each vertix's coordinates
         @param:mass-> mass of the shape
@@ -21,6 +21,10 @@ class Polygon:
         self.color = clr(color)
         self.type = 'Polygon'
         self.move = move
+        self.anti_gravity = False
+        self.tol_v = 0.01
+        self.tol_w = 0.001
+
 
         # mass inertia postions coff of restitution
         self.mass = mass
@@ -37,6 +41,8 @@ class Polygon:
         self.torque = 0
         self.momentum = mass * self.vel
         self.ang_mom = mi * w
+        self.force_func = set()
+        self.torque_func = set()
 
         # center of mass and orient
         self.cm_pos = centeriod(self.vert)
@@ -114,8 +120,14 @@ class Polygon:
         '''
         self.w += t/self.mi
 
+    def attach_force(self, func):
+        self.force_func.add(func)
+
+    def attach_torque(self, func):
+        self.torque_func.add(func)
+
     # utitlity method to calculate the both linear and angular postions and velocities of the shape
-    def motion_dynamics(self, t, dt=1, forces_func=None, torque_func=None):
+    def motion_dynamics(self, t, dt=1):
         '''
         @param: t-> time in msec (int)
         @param: dt-> delta time in msec (int)
@@ -133,10 +145,11 @@ class Polygon:
 
         # linear motion dependent forces calcuations 
         acc_= np.array([0, 0], dtype=np.float32)
-        if forces_func is None:
+        if not self.force_func:
             acc_ = acc
         else:
-            for fun in forces_func:
+            for fun in self.force_func:
+                if fun is gravity_world and self.anti_gravity: continue
                 acc_ += fun(t, self.cm_pos, self.vel, self.mass) / self.mass
         self.vel = vel_half + (0.5 * acc_ * dt)
 
@@ -148,16 +161,26 @@ class Polygon:
 
         # angular motion dependent torque calcuations 
         acc_ang_ = 0
-        if torque_func is None:
+        if not self.torque_func:
             acc_ang_ = acc_ang
         else:
-            for fun in torque_func:
+            for fun in self.torque_func:
                 acc_ang_ += fun(t, self.cm_pos_ang, self.w, self.mi) / self.mi
         self.w = w_half + (0.5 * acc_ang_ * dt)
 
         # updating last positions
         self.cm_pos_last = e
         self.cm_pos_ang_last = a
+
+        if self.anti_gravity and np.linalg.norm(self.vel)<self.tol_v:
+            self.vel = np.array([0.0, 0.0])
+        else:
+            self.anti_gravity = False
+
+        if self.anti_gravity and abs(self.w)<self.tol_w:
+            self.w = 0
+        else:
+            self.anti_gravity = False
 
         self.translatation()
         self.rotation()
@@ -183,9 +206,14 @@ class Polygon:
 
 
 class Line(Polygon):
+    # def __init__(self, vert: list, mass: float, mi: float, vel=np.array([0, 0], dtype=np.float32), w=0, e=1, move=True, color=None):
+    #     Polygon.__init__(self, vert, mass, mi, vel, w, e, move, color)
 
     def normal(self):
         return normal(self.vert[1] - self.vert[0], normalize=True)
+
+    def along(self):
+        normalize(self.vert[1] - self.vert[0])
 
     def draw(self, screen, cm=True, width=5, dot_color='black'):
         start_pos, end_pos = [(int(scale*i[0]), int(scale*i[1])) for i in self.vert]
@@ -195,11 +223,13 @@ class Line(Polygon):
             pygame.draw.circle(screen, clr(dot_color), cen, width//2)
 
 class Cirlce:
-    def __init__(self, center, radius, mass, mi, vel=np.array([0, 0], dtype=np.float32), w=0, e=1, move=True, color=None):
+    def __init__(self, center, radius, mass, mi, vel=np.array([0, 0], dtype=np.float32), w=0, e=1, move=True, color=None, type='Circle'):
         self.radius = radius
         self.color = clr(color)
         self.type = 'Circle'
         self.move = move
+        self.tol_v = 0.00001
+        self.tol_w = 0.000001
 
         # mass inertia postions coff of restitution
         self.mass = mass
@@ -215,6 +245,8 @@ class Cirlce:
         self.torque = 0
         self.momentum = mass * self.vel
         self.ang_mom = mi * w
+        self.force_func = set()
+        self.torque_func = set()
 
         # center of mass and orient
         self.cm_pos = np.array(center, dtype=np.float32)
@@ -272,8 +304,14 @@ class Cirlce:
         '''
         self.w += t/self.mi
 
+    def attach_force(self, func):
+        self.force_func.add(func)
+
+    def attach_torque(self, func):
+        self.torque_func.add(func)
+
     # utitlity method to calculate the both linear and angular postions and velocities of the shape
-    def motion_dynamics(self, t, dt=1, forces_func=None, torque_func=None):
+    def motion_dynamics(self, t, dt=1):
         '''
         @param: t-> time in msec (int)
         @param: dt-> delta time in msec (int)
@@ -291,10 +329,10 @@ class Cirlce:
 
         # linear motion dependent forces calcuations 
         acc_= np.array([0, 0], dtype=np.float32)
-        if forces_func is None:
+        if not self.force_func:
             acc_ = acc
         else:
-            for fun in forces_func:
+            for fun in self.force_func:
                 acc_ += fun(t, self.cm_pos, self.vel, self.mass) / self.mass
         self.vel = vel_half + (0.5 * acc_ * dt)
 
@@ -306,16 +344,27 @@ class Cirlce:
 
         # angular motion dependent torque calcuations 
         acc_ang_ = 0
-        if torque_func is None:
+        if not self.torque_func:
             acc_ang_ = acc_ang
         else:
-            for fun in torque_func:
+            for fun in self.torque_func:
                 acc_ang_ += fun(t, self.cm_pos_ang, self.w, self.mi) / self.mi
         self.w = w_half + (0.5 * acc_ang_ * dt)
 
         # updating last positions
         self.cm_pos_last = e
         self.cm_pos_ang_last = a
+
+        if self.anti_gravity and np.linalg.norm(self.vel)<self.tol_v:
+            self.vel = np.array([0.0, 0.0])
+        else:
+            self.anti_gravity = False
+
+        if self.anti_gravity and abs(self.w)<self.tol_w:
+            self.w = 0
+        else:
+            self.anti_gravity = False
+
 
     # finds furthest point in some direction
     def find_furthest(self, direction=np.array([1.0, 0.0]), dot=False, index=False):
@@ -330,7 +379,7 @@ class Cirlce:
         return max_point
 
 
-def solver(a, b, n, dis, contact):
+def solver(a, b, n, dis, contact, tol=0.01):
     # reltive positions from com of shapes to contact
     r_ap = contact - a.cm_pos
     r_bp = contact - b.cm_pos
@@ -345,12 +394,17 @@ def solver(a, b, n, dis, contact):
     e = (a.e * b.e)/2
     numerator = -(1 + e)*np.dot(v_ab, n)
 
+    ss = 1
+
     if (not a.move) and b.move:
         denominator = (1/b.mass) + (np.dot(normal(r_bp), n)**2) / b.mi
         J =  (numerator / denominator)*n
         T_b = cross(J, r_bp)
         b.impulse_force(-J)
         b.impulse_torque(-T_b)
+        # if np.linalg.norm(b.vel) < ss * b.tol_v and abs(b.w) < ss * b.tol_w:
+        #     b.anti_gravity = True
+        #     print('yes')
         k = 1
 
     elif a.move and (not b.move):
@@ -359,6 +413,9 @@ def solver(a, b, n, dis, contact):
         T_a = cross(J, r_ap)
         a.impulse_force(J)
         a.impulse_torque(T_a)
+        # if np.linalg.norm(a.vel) < ss * a.tol_v and abs(a.w) < ss * a.tol_w:
+        #     a.anti_gravity = True
+        #     print('yes')
         k = 0
         
     else:
@@ -401,7 +458,7 @@ def spring(t, pos, vel, mass):
     # spring cosntants
     k = np.array([5, 4])
     # betas
-    beta = np.array([1, 2], dtype=np.float32)
+    beta = np.array([10, 20], dtype=np.float32)
 
     # equations
     d = pos - org
@@ -414,7 +471,7 @@ def ang_spring(t, theta, w, mi):
     # spring cosntants
     k = 2
     # betas
-    beta = 1
+    beta = 10
 
     # equations
     d = theta - org
@@ -422,7 +479,7 @@ def ang_spring(t, theta, w, mi):
     return torque
 
 def gravity_world(t, pos, vel, mass):
-    g = 0.001
+    g = 0.0005
     return np.array([0, g*mass], dtype=np.float32)
 
 def draw_points(screen, points, size=5, color='black'):
@@ -440,6 +497,9 @@ if __name__ == '__main__':
     # p.impulse_force(np.array([100, 50], dtype=np.float32))
     p.impulse_torque(10)
 
+    p.attach_force(spring)
+    p.attach_force(gravity_world)
+    p.attach_torque(ang_spring)
     pygame.init()
     pygame.font.init()
     pygame.display.set_caption("Nuclear Reaction !")
@@ -460,7 +520,7 @@ if __name__ == '__main__':
         screen.fill(clr('white'))
 
         p.draw(screen)    
-        p.motion_dynamics(time(), forces_func=[spring], torque_func=[ang_spring])
+        p.motion_dynamics(time())
         text(screen, f"FPS: {1000 // (ff)}, T: {ff} ms", 600, 10)
         pygame.display.flip()
         end = time()
