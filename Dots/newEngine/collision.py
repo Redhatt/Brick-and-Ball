@@ -183,7 +183,7 @@ def GJK(a, b):
 
 
 # findnig contact points
-def find_contact(a, b, n, tol=0.05):
+def find_contact(a, b, n, tol=0.01):
 	if a.type == 'Polygon' and b.type == 'Polygon':
 		index1 = a.find_furthest(n, index=True)
 		s1 = len(a.vert)

@@ -52,7 +52,7 @@ class Spring:
         pygame.draw.line(screen, self.color, scale * self.left, scale * self.right, width)
     
 class GravityWorld:
-    def __init__(self, g=0.058, direction=np.array([0.0, 1.0])):
+    def __init__(self, g=0.05, direction=np.array([0.0, 1.0])):
         self.g = g
         self.direction = direction
         self.apl = 0
@@ -62,6 +62,30 @@ class GravityWorld:
     
     def get(self, shape):
         return (self.apl * self.g * shape.mass * self.direction)
+    
+    def draw(self, screen, scale):
+        pass
+
+class Drag:
+    def __init__(self, k=0.5):
+        self.k = k
+        self.apl = 0
+    
+    def apply(self, t, dt):
+        self.apl = 1
+    
+    def get(self, shape):
+        return -shape.vel * self.k *self.apl
+    
+    def draw(self, screen, scale):
+        pass
+
+class DragAng(Drag):
+    def __init__(self, k=0.1):
+        Drag.__init__(self, k=k)
+    
+    def get(self, shape):
+        return -shape.w * self.k * self.apl
     
     def draw(self, screen, scale):
         pass

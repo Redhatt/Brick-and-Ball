@@ -22,7 +22,7 @@ class Polygon:
         self.type = type
         self.move = move
         self.tol_v = 0.0001
-        self.tol_w = 0.00001
+        self.tol_w = 0.00005
 
 
         # mass inertia postions coff of restitution

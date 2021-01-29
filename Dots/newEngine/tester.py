@@ -33,18 +33,22 @@ wall_down.shift([0, Y-OY - unit_len])
 wall_right.shift([X-OX-unit_len, 0])
 
 gravity = GravityWorld()
+drag = Drag()
+drag_ang = DragAng()
 contianer = []
 forces = []
 walls = [wall_left, wall_right, wall_top, wall_down]
 boxes = []
-nt = 10
+nt = 3
 for i in range(nt):
-    v = Polygon(square, 20, 20, e=0.5)
+    v = Polygon(square, 20, 2, e=0.5)
     # pos = [((OX+2*unit_len)*(nt-i) + (OX + nt*unit_len + 2)*(i))/nt, Y-3*unit_len]
-    pos = [X - 3*unit_len, ((OY+2*unit_len)*(nt-i) + (OY + nt*unit_len + 2)*(i))/nt]
+    pos = [X/2, ((OY+1*unit_len)*(nt-i) + (OY + nt*unit_len + 2)*(i))/nt]
     v.place(pos)
     v.scale(2)
     v.attach_force(gravity)
+    v.attach_force(drag)
+    v.attach_torque(drag_ang)
     boxes.append(v)
     control = v 
 
@@ -62,8 +66,10 @@ p.attach_force(gravity)
 c.attach_force(gravity)
 forces.append(spring)
 forces.append(gravity)
+forces.append(drag)
+forces.append(drag_ang)
 
-FPS = 60
+FPS = 1000
 pygame.init()
 pygame.font.init()
 pygame.display.set_caption("Nuclear Reaction !")
