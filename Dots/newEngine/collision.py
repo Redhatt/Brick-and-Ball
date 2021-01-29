@@ -1,6 +1,6 @@
 # collision
 import numpy as np
-from engine_refined import *
+from engine import *
 
 # Polygon collision detections-----------------------------------
 
@@ -39,10 +39,10 @@ def SAT(a, b):
 			min_B, max_B = np.float('inf'), -np.float('inf')
 			ma, mb, Ma, Mb = np.array([0, 0]), np.array([0, 0]), np.array([0, 0]), np.array([0, 0])
 			for vert in a.vert:
-				min_A, max_A = min(min_A, np.dot(vert, axis)), max(max_A, np.dot(vert, axis))
+				min_A, max_A = min(min_A, vdot(vert, axis)), max(max_A, vdot(vert, axis))
 
 			for vert in b.vert:
-				min_B, max_B = min(min_B, np.dot(vert, axis)), max(max_B, np.dot(vert, axis))
+				min_B, max_B = min(min_B, vdot(vert, axis)), max(max_B, vdot(vert, axis))
 			
 			# condition to check overlapping
 			if min_A<=min_B<=max_A or min_A<=max_B<=max_A or \
@@ -64,7 +64,7 @@ def next_simplex(simplex, d):
 	# switch case for 2, 3, 4 size of simplex
 	if len(simplex) == 2: return line(simplex, d)
 	elif len(simplex) == 3: return triangle(simplex, d)
-	elif len(simplex) == 4: return tetrahedron(simplex, d) # not needed now, since 2D only.
+	#elif len(simplex) == 4: return tetrahedron(simplex, d) # not needed now, since 2D only.
 	return False, None, None
 
 
@@ -173,7 +173,7 @@ def GJK(a, b):
 
 	while True:
 		sup = support(a, b, d)
-		if np.dot(d, sup) <= 0:
+		if vdot(d, sup) <= 0:
 			return False , None
 
 		simplex.append(sup)
@@ -183,26 +183,39 @@ def GJK(a, b):
 
 
 # findnig contact points
-def find_contact(a, b, n, tol=0.01):
+def find_contact(a, b, n, tol=0.05):
 	if a.type == 'Polygon' and b.type == 'Polygon':
-		index = a.find_furthest(n, index=True)
+		index1 = a.find_furthest(n, index=True)
 		s1 = len(a.vert)
-		v1, v2, v3 = a.vert[(index - 1)%s1], a.vert[(index)], a.vert[(index+1)%s1]
-		if abs(np.dot(v1-v2, n)) < tol or abs(np.dot(v3-v2, n)) < tol:
+		v1, v2, v3 = a.vert[(index1 - 1)%s1], a.vert[index1], a.vert[(index1 + 1)%s1]
+
+		if (abs(vdot(v1-v2, n)) < tol or abs(vdot(v3-v2, n)) < tol):
 			return b.find_furthest(-n)
-		return a.vert[index]
+		return v2
 
 	elif a.type == 'Circle':
 		return a.find_furthest(align(n, b.cm_pos - a.cm_pos))
-
+	
 	elif b.type == 'Circle':
 		return b.find_furthest(align(n, a.cm_pos - b.cm_pos))
 
-	elif a.type == 'Line':
-		if abs(np.dot(a.along(), n))<tol:
-			return b.find_furthest(align(n, a.cm_pos - b.cm_pos))
+	elif (a.type == 'Line' and b.type == 'Polygon') or \
+		(a.type == 'Polygon' and b.type == 'Line'):
+		a, b = (a, b) if a.type == 'Polygon' else (b, a)
+
+		index1 = a.find_furthest(align(n, b.cm_pos - a.cm_pos), index=True)
+		s1 = len(a.vert)
+		v1, v2, v3 = a.vert[(index1 - 1)%s1], a.vert[index1], a.vert[(index1 + 1)%s1]
+
+		if abs(vdot(v1-v2, n)) < tol:
+			return (v1 + v2)/2
+		elif abs(vdot(v3-v2, n)) < tol:
+			return (v2 + v3)/2
+		elif abs(vdot(b.along(), n))<tol:
+			return v2
 		else:
-			return a.find_furthest(align(n, b.cm_pos - a.cm_pos))
+			return a.find_furthest(align(n, a.cm_pos - b.cm_pos))
+	return None
 			
 
 # utility function for EPA
@@ -217,7 +230,7 @@ def closest_edge(simplex):
 	for i in range(size):
 		v1, v2 = simplex[i], simplex[(i+1)%size]
 		n = normal(v2 - v1, v1, nrm=True)
-		d = np.dot(n, v1)
+		d = vdot(n, v1)
 		if d < min_dis:
 			min_dis = d
 			min_index = (i+1)%size
@@ -238,7 +251,7 @@ def EPA(simplex, a, b, tol=0.0001):
 		# get edge_normal closest to origin and its distance
 		n, dis, index = closest_edge(simplex)
 		p = support(a, b, n)
-		d = np.dot(p, n)
+		d = vdot(p, n)
 		if abs(d - dis) < tol or len(simplex)>max_size:
 			return n, dis + tol, find_contact(a, b, n)
 		else:
@@ -254,21 +267,25 @@ def collision_handler(container):
 		for i in range(size):
 			a, b = container[i], container[(i+1)%size]
 			# determine type of collision
-			collide, simplex = GJK(a, b)
-			if collide:
-				nor, dis, p = EPA(simplex, a, b)
-				solver(a, b, nor, dis, p)
-				contacts.append(p)
+			if a.move or b.move:
+				collide, simplex = GJK(a, b)
+				if collide:
+					nor, dis, p = EPA(simplex, a, b)
+					if p is None: continue
+					solver(a, b, nor, dis, p)
+					contacts.append(p)
 
 	container.sort(key=lambda x: (x.cm_pos[1]))
 	if size>1:
 		for i in range(size):
 			a, b = container[i], container[(i+1)%size]
-			collide, simplex = GJK(a, b)
-			if collide:
-				nor, dis, p = EPA(simplex, a, b)
-				solver(a, b, nor, dis, p)
-				contacts.append(p)
+			if a.move or b.move:
+				collide, simplex = GJK(a, b)
+				if collide:
+					nor, dis, p = EPA(simplex, a, b)
+					if p is None: continue
+					solver(a, b, nor, dis, p)
+					contacts.append(p)
 
 	return contacts
 

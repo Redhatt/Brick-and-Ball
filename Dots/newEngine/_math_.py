@@ -7,10 +7,10 @@ def a2r(a):
     return a * (np.pi / 180)
 
 
-def centeriod(vert: list):
+def centroid(vert: list):
     '''
     @param: vertices list of numpy.array type
-    return: numpy array -> centeriod of shape
+    return: numpy array -> centroid of shape
     '''
     x, y = 0, 0
     n = len(vert)
@@ -21,11 +21,21 @@ def centeriod(vert: list):
         y += i[1]
     return np.array([x/n, y/n])
 
-def normalize(a):
-	v = np.linalg.norm(a)
-	# if v < 1e-10: return np.array([0.0, 0.0])
-	a = a / v
-	return a
+def norm(a):
+    return (a[0]**2 + a[1]**2)**0.5
+
+def vdot(a, b):
+    return a[0]*b[0] + a[1]*b[1]
+
+def vrot(mat, a):
+    return np.array([mat[0][0]*a[0] + mat[0][1]*a[1], mat[1][0]*a[0] + mat[1][1]*a[1]])
+
+def unit(a, mag=False):
+    v = norm(a)
+    a = a / v
+    if mag:
+        return a, v
+    return a
 
 def align(a, b):
     if np.dot(a, b)<0: return -a
@@ -42,7 +52,7 @@ def normal(a, b=None, nrm=False):
     #                 [1,  0]])
 
     if nrm: 
-    	p = normalize(p)
+    	p = unit(p)
 
     if b is None: 
         return p
