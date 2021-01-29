@@ -259,11 +259,22 @@ def EPA(simplex, a, b, tol=0.0001):
 # ---------------------------------------------------------------
 
 
-def collision_handler(container):
+def collision_handler(container, big=None):
 	contacts = []
 	size = len(container)
 	container.sort(key=lambda x: (x.cm_pos[0]))
 	if size>1:
+		for b in big:
+			for a in container:
+				# determine type of collision
+				if a.move or b.move:
+					collide, simplex = GJK(a, b)
+					if collide:
+						nor, dis, p = EPA(simplex, a, b)
+						if p is None: continue
+						solver(a, b, nor, dis, p)
+						contacts.append(p)
+
 		for i in range(size):
 			a, b = container[i], container[(i+1)%size]
 			# determine type of collision
@@ -275,8 +286,7 @@ def collision_handler(container):
 					solver(a, b, nor, dis, p)
 					contacts.append(p)
 
-	container.sort(key=lambda x: (x.cm_pos[1]))
-	if size>1:
+		container.sort(key=lambda x: (x.cm_pos[1]))
 		for i in range(size):
 			a, b = container[i], container[(i+1)%size]
 			if a.move or b.move:

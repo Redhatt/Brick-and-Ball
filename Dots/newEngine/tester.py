@@ -1,5 +1,6 @@
 from engine import *
 from collision import *
+from force import *
 
 length, breadth = 1300, 700
 unit_len = 0.15
@@ -13,14 +14,15 @@ lef = [[OX, OY], [OX, Y]]
 
 # p = Polygon(hexa, 200, 200, color='blue', e=1)
 r = Polygon(square, 200, 200, color='green', e=1)
-p = Polygon(square, 1e9, 1e9, color='green', e=1)
-c = Cirlce([2.0, 2], 1, 200, 200, color='red', e=1)
+p = Polygon(square, 200, 200, color='green', e=1)
+c = Cirlce([2.0, 2], unit_len, 200, 2, color='red', e=1, mu=0.8)
 c.place([X/2, Y/2])
 r.place([2, 3])
 p.place([6, 3])
-p.scale(8)
+p.scale(3)
 r.scale(3)
-boxes = [p, r]
+c.scale(3)
+boxes = [c]
 
 
 wall_top = Line(top, 1e9, 1e9, color='cyan', e=0.5, move=False)
@@ -30,27 +32,38 @@ wall_right = Line(lef, 1e9, 1e9, color='cyan', e=0.5, move=False)
 wall_down.shift([0, Y-OY - unit_len])
 wall_right.shift([X-OX-unit_len, 0])
 
-
+gravity = GravityWorld()
 contianer = []
+forces = []
 walls = [wall_left, wall_right, wall_top, wall_down]
-# boxes = []
-# nt = 60
-# for i in range(nt):
-#     v = Polygon(square, 200, 200, e=0.5)
-#     pos = [((OX+2*unit_len)*(nt-i) + (OX + nt*unit_len + 2)*(i))/nt, Y/2]
-#     v.place(pos)
-#     v.scale(1)
-#     boxes.append(v)
-#     control = v 
+boxes = []
+nt = 10
+for i in range(nt):
+    v = Polygon(square, 20, 20, e=0.5)
+    # pos = [((OX+2*unit_len)*(nt-i) + (OX + nt*unit_len + 2)*(i))/nt, Y-3*unit_len]
+    pos = [X - 3*unit_len, ((OY+2*unit_len)*(nt-i) + (OY + nt*unit_len + 2)*(i))/nt]
+    v.place(pos)
+    v.scale(2)
+    v.attach_force(gravity)
+    boxes.append(v)
+    control = v 
 
 control = boxes[-1]
-for i in walls:
-    contianer.append(i)
-
 for i in boxes:
     contianer.append(i)
 
 
+spring = Spring(k=10, beta=1)
+spring.attach(r, p, adjust=1)
+r.attach_force(spring)
+p.attach_force(spring)
+r.attach_force(gravity)
+p.attach_force(gravity)
+c.attach_force(gravity)
+forces.append(spring)
+forces.append(gravity)
+
+FPS = 60
 pygame.init()
 pygame.font.init()
 pygame.display.set_caption("Nuclear Reaction !")
@@ -63,7 +76,7 @@ dt = 0.1
 
 while run:
     start = time()
-    # clock.tick(FPS)
+    clock.tick(FPS)
 
     key = pygame.key.get_pressed()
     for e in pygame.event.get():
@@ -102,10 +115,17 @@ while run:
     for shape in boxes:
         shape.motion_dynamics(time(), dt=dt)
 
+    for shape in walls:
+        shape.draw(screen)
+
     for shape in contianer:
         shape.draw(screen)
 
-    points = collision_handler(contianer)
+    for force in forces:
+        force.apply(time(), dt=dt)
+        force.draw(screen, scale)
+
+    points = collision_handler(contianer, walls)
     draw_points(screen, points)
 
     text(screen, f"FPS: {1000 // (ff)}, T: {ff} ms", length-150, 10, color=clr('black'))

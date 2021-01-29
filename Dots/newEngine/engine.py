@@ -9,7 +9,7 @@ FPS = 60
 scale = 100
 
 class Polygon:
-    def __init__(self, vert: list, mass: float, mi: float, cm_pos=None, vel=np.array([0, 0], dtype=np.float32), w=0, e=1, move=True, color=None, type='Polygon'):
+    def __init__(self, vert: list, mass: float, mi: float, cm_pos=None, vel=np.array([0, 0], dtype=np.float32), w=0, e=1, move=True, color=None, type='Polygon', mu=0.1):
         '''
         @param:vert-> list a 2d list with each vertix's coordinates
         @param:mass-> mass of the shape
@@ -21,8 +21,8 @@ class Polygon:
         self.color = clr(color)
         self.type = type
         self.move = move
-        self.tol_v = 0.001
-        self.tol_w = 0.0001
+        self.tol_v = 0.0001
+        self.tol_w = 0.00001
 
 
         # mass inertia postions coff of restitution
@@ -30,6 +30,7 @@ class Polygon:
         self.mi = mi
         self.vert = [np.array(i, dtype=np.float32) for i in vert]
         self.e = e
+        self.mu = mu
 
         # velocities and angluar velocities
         self.vel = vel
@@ -47,8 +48,8 @@ class Polygon:
         self.cm_ang = 0
         self.cm_ang_last = 0
     
-    def scale(self, s):
-        cent = centroid(self.vert)
+    def scale(self, s, cent=None):
+        cent = centroid(self.vert) if cent is None else cent
         for i in range(len(self.vert)):
             self.vert[i] = s*(self.vert[i] - cent) + cent
             
@@ -144,15 +145,17 @@ class Polygon:
 
         # getting acc from superpostions of applied forces and torques
         for force in self.force_func:
-            self.acc += force(self, t) / self.mass
+            self.acc += force(self) / self.mass
         
         for torque in self.torque_func:
-            self.acc_ang += torque(self, t) / self.mi
+            self.acc_ang += torque(self) / self.mi
 
         # linear and angular integration
         Linear_integrator(self, dt)
         angular_integrator(self, dt)
 
+        self.acc = np.array([0.0, 0.0])
+        self.acc_ang = 0.0
         if norm(self.vel) < self.tol_v:
             self.vel = np.array([0.0, 0.0])
         
@@ -183,8 +186,8 @@ class Polygon:
 
 
 class Line(Polygon):
-    def __init__(self, vert: list, mass: float, mi: float, vel=np.array([0, 0], dtype=np.float32), w=0, e=1, move=True, color=None, type='Line'):
-        Polygon.__init__(self, vert=vert, mass=mass, mi=mi, vel=vel, w=w, e=e, move=move, color=color, type=type)
+    def __init__(self, vert: list, mass: float, mi: float, vel=np.array([0, 0], dtype=np.float32), w=0, e=1, move=True, color=None, type='Line', mu=0.1):
+        Polygon.__init__(self, vert=vert, mass=mass, mi=mi, vel=vel, w=w, e=e, move=move, color=color, type=type, mu=mu)
 
     def normal(self):
         return normal(self.vert[1] - self.vert[0], nrm=True)
@@ -200,17 +203,22 @@ class Line(Polygon):
             pygame.draw.circle(screen, clr(dot_color), cen, width//2)
 
 class Cirlce(Polygon):
-    def __init__(self, center, radius, mass, mi, vel=np.array([0, 0], dtype=np.float32), w=0, e=1, move=True, color=None, type='Circle'):
+    def __init__(self, center, radius, mass, mi, vel=np.array([0, 0], dtype=np.float32), w=0, e=1, move=True, color=None, type='Circle', mu=0.1):
         self.radius = radius
-        Polygon.__init__(self, [], mass, mi, center, vel, w, e, move, color, type=type)
+        Polygon.__init__(self, [], mass, mi, center, vel, w, e, move, color, type=type, mu=mu)
+        self.vert.append(self.find_furthest())
 
     def scale(self, s):
-        self.radius *= s
+        Polygon.scale(self, s, cent=self.cm_pos)
+        self.radius = s * self.radius
 
     # to draw
     def draw(self, screen, cm=True, dot_color='black'):
         cen = (int(scale*self.cm_pos[0]), int(scale*self.cm_pos[1]))
         pygame.draw.circle(screen, self.color, cen, scale*self.radius)
+        con = [(int(scale*i[0]), int(scale*i[1])) for i in self.vert]
+        for i in con:
+            pygame.draw.circle(screen, clr(dot_color), i, 2)
         if cm:
             pygame.draw.circle(screen, clr(dot_color), cen, 2)
 
@@ -227,11 +235,12 @@ class Cirlce(Polygon):
         return max_point
 
 def Linear_integrator(shape, dt=0.1):
-    # semi-implicit
+    # semi-implicit eularian
     shape.vel += shape.acc * dt
     shape.cm_pos += shape.vel * dt
 
 def angular_integrator(shape, dt=0.1):
+    # semi-implicit eularian
     shape.w += shape.acc_ang * dt 
     shape.cm_ang += shape.w * dt
 
@@ -248,11 +257,16 @@ def solver(a, b, n, dis, contact, tol=0.01):
     v_ab = v_ap - v_bp
 
     e = (a.e * b.e)/2
+    mu = (a.mu + b.mu)/2
+    along = normal(n, v_ab)
+    v_al = vdot(v_ab, along)
+    if v_al < tol: v_al = 0.0
+    else: v_al = 1.0
     numerator = -(1 + e)*vdot(v_ab, n)
 
     if (not a.move) and b.move:
         denominator = (1/b.mass) + (vdot(normal(r_bp), n)**2) / b.mi
-        J =  (numerator / denominator)*n
+        J = (numerator / denominator)*(n + along*mu*v_al)
         T_b = cross(J, r_bp)
         b.impulse_force(-J)
         b.impulse_torque(-T_b)
@@ -260,7 +274,7 @@ def solver(a, b, n, dis, contact, tol=0.01):
 
     elif a.move and (not b.move):
         denominator = (1/a.mass) + (vdot(normal(r_ap), n)**2) / a.mi
-        J =  (numerator / denominator)*n
+        J =  (numerator / denominator)*(n + along*mu*v_al)
         T_a = cross(J, r_ap)
         a.impulse_force(J)
         a.impulse_torque(T_a)
@@ -268,7 +282,7 @@ def solver(a, b, n, dis, contact, tol=0.01):
         
     else:
         denominator = (1/a.mass + 1/b.mass) + (vdot(normal(r_ap), n)**2) / a.mi + (vdot(normal(r_bp), n)**2) / b.mi
-        J =  (numerator / denominator)*n
+        J =  (numerator / denominator)*(n + along*mu*v_al)
         T_a = cross(J, r_ap)
         T_b = cross(J, r_bp)
         a.impulse_force(J)
