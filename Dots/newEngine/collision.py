@@ -164,7 +164,7 @@ def GJK(a, b):
 	@param: b-> shape B
 	return: truth value of collision btw the shapes
 	'''
-	unit_x = np.array([1.0, -1.0], dtype=np.float32)
+	unit_x = np.array([1.0, -1.0], dtype=np.float64)
 	simplex = list()
 
 	sup = support(a, b, unit_x)
@@ -338,7 +338,7 @@ if __name__ == '__main__':
 	r = Polygon(v1, 200, 200)
 	
 
-	# p.impulse_force(np.array([100, 50], dtype=np.float32))
+	# p.impulse_force(np.array([100, 50], dtype=np.float64))
 	p.impulse_torque(0.1)
 
 

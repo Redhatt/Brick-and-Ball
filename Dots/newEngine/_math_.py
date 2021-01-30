@@ -47,7 +47,7 @@ def normal(a, b=None, nrm=False):
     @param:b-> nomral direction along
     here p is counter clockwise rotated by default
     '''
-    p = np.array([a[1], -a[0]], dtype=np.float32)
+    p = np.array([a[1], -a[0]], dtype=np.float64)
     # p = a@np.array([[0, -1], 
     #                 [1,  0]])
 
@@ -77,3 +77,7 @@ def support(a, b, d):
     returns: 2D point with max dot pord
     '''
     return a.find_furthest(d) - b.find_furthest(-d)
+
+def constraint_solver(amass, bmass, ami, bmi, av, bv):
+    pass
+

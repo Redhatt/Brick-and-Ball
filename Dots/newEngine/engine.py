@@ -9,7 +9,7 @@ FPS = 60
 scale = 100
 
 class Polygon:
-    def __init__(self, vert: list, mass: float, mi: float, points=[], cm_pos=None, vel=np.array([0, 0], dtype=np.float32), w=0, e=1, move=True, color=None, type='Polygon', mu=0.1):
+    def __init__(self, vert: list, mass: float, mi: float, points=[], cm_pos=None, vel=np.array([0, 0], dtype=np.float64), w=0, e=1, move=True, color=None, type='Polygon', mu=0.1):
         '''
         @param:vert-> list a 2d list with each vertix's coordinates
         @param:mass-> mass of the shape
@@ -28,8 +28,8 @@ class Polygon:
         # mass inertia postions coff of restitution
         self.mass = mass
         self.mi = mi
-        self.vert = [np.array(i, dtype=np.float32) for i in vert]
-        self.points = [np.array(i, dtype=np.float32) for i in points]
+        self.vert = [np.array(i, dtype=np.float64) for i in vert]
+        self.points = [np.array(i, dtype=np.float64) for i in points]
         self.e = e
         self.mu = mu
 
@@ -44,7 +44,7 @@ class Polygon:
         self.torque_func = set()
 
         # center of mass and orient
-        self.cm_pos = centroid(self.vert) if cm_pos is None else np.array(cm_pos)
+        self.cm_pos = centroid(self.vert) if cm_pos is None else np.array(cm_pos, dtype=np.float64)
         self.cm_pos_last = self.cm_pos.copy()
         self.cm_ang = 0
         self.cm_ang_last = 0
@@ -212,7 +212,7 @@ class Polygon:
 
 
 class Line(Polygon):
-    def __init__(self, vert: list, mass: float, mi: float, vel=np.array([0, 0], dtype=np.float32), w=0, e=1, move=True, color=None, type='Line', mu=0.1):
+    def __init__(self, vert: list, mass: float, mi: float, vel=np.array([0, 0], dtype=np.float64), w=0, e=1, move=True, color=None, type='Line', mu=0.1):
         Polygon.__init__(self, vert=vert, mass=mass, mi=mi, vel=vel, w=w, e=e, move=move, color=color, type=type, mu=mu)
 
     def normal(self):
@@ -229,9 +229,9 @@ class Line(Polygon):
             pygame.draw.circle(screen, clr(dot_color), cen, width//2)
 
 class Cirlce(Polygon):
-    def __init__(self, center, radius, mass, mi, points=[], vel=np.array([0, 0], dtype=np.float32), w=0, e=1, move=True, color=None, type='Circle', mu=0.1):
+    def __init__(self, center, radius, mass, mi, points=[], vel=np.array([0, 0], dtype=np.float64), w=0, e=1, move=True, color=None, type='Circle', mu=0.1):
         self.radius = radius
-        Polygon.__init__(self, [], mass, mi, center, vel, w, e, move, color, type=type, mu=mu)
+        Polygon.__init__(self, vert=[], mass=mass, mi=mi, cm_pos=center, vel=vel, w=w, e=e, move=move, color=color, type=type, mu=mu)
         self.points = points + [self.find_furthest()]
 
     def scale(self, s):
@@ -348,7 +348,7 @@ if __name__ == '__main__':
     p = Line(ve, 200, 200)
 
     # impulses
-    # p.impulse_force(np.array([100, 50], dtype=np.float32))
+    # p.impulse_force(np.array([100, 50], dtype=np.float64))
     p.impulse_torque(10)
 
     p.attach_force(spring)

@@ -38,19 +38,20 @@ drag_ang = DragAng()
 contianer = []
 forces = []
 walls = [wall_left, wall_right, wall_top, wall_down]
-# boxes = []
-# nt = 3
-# for i in range(nt):
-#     v = Polygon(vert=square, mass=20, mi=2, e=0.5)
-#     # pos = [((OX+2*unit_len)*(nt-i) + (OX + nt*unit_len + 2)*(i))/nt, Y-3*unit_len]
-#     pos = [X/2, ((OY+1*unit_len)*(nt-i) + (OY + nt*unit_len + 2)*(i))/nt]
-#     v.place(pos)
-#     v.scale(2)
-#     v.attach_force(gravity)
-#     v.attach_force(drag)
-#     v.attach_torque(drag_ang)
-#     boxes.append(v)
-#     control = v 
+boxes = []
+nt = 8
+for i in range(nt):
+    v = Polygon(vert=square, mass=20, mi=2, e=0.5)
+    # v = Cirlce(center=[0, 0], radius=unit_len, mass=20, mi=2, e=0.5, mu=0.9)
+    # pos = [((OX+2*unit_len)*(nt-i) + (OX + nt*unit_len + 2)*(i))/nt, Y-3*unit_len]
+    pos = [X/2, ((OY+1*unit_len)*(nt-i) + (OY + nt*unit_len + 2)*(i))/nt]
+    v.place(pos)
+    v.scale(2)
+    v.attach_force(gravity)
+    v.attach_force(drag)
+    v.attach_torque(drag_ang)
+    boxes.append(v)
+    control = v 
 
 control = boxes[-1]
 for i in boxes:
@@ -132,7 +133,7 @@ while run:
         force.draw(screen, scale)
 
     points = collision_handler(contianer, walls)
-    draw_points(screen, points)
+    # draw_points(screen, points)
 
     text(screen, f"FPS: {1000 // (ff)}, T: {ff} ms", length-150, 10, color=clr('black'))
     pygame.display.flip()
