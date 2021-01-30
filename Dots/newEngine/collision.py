@@ -183,11 +183,39 @@ def GJK(a, b):
 
 
 # findnig contact points
-def find_contact(a, b, n, tol=0.01):
+def find_contact(a, b, n, tol=0.02):
 	if a.type == 'Polygon' and b.type == 'Polygon':
 		index1 = a.find_furthest(n, index=True)
 		s1 = len(a.vert)
 		v1, v2, v3 = a.vert[(index1 - 1)%s1], a.vert[index1], a.vert[(index1 + 1)%s1]
+
+		index2 = b.find_furthest(-n, index=True)
+		s2 = len(b.vert)
+		w1, w2, w3 = b.vert[(index2 - 1)%s2], b.vert[index2], b.vert[(index2 + 1)%s2]
+
+		nn = normal(n)
+		if abs(vdot(v1-v2, n)) < tol:
+			if abs(vdot(w1-w2, n)) < tol:
+				ans = sorted((v1, v2, w1, w2), key=lambda x:vdot(x, nn))
+				return (ans[1] + ans[2])/2
+			elif abs(vdot(w3-w2, n)) < tol:
+				ans = sorted((v1, v2, w3, w2), key=lambda x:vdot(x, nn))
+				return (ans[1] + ans[2])/2
+			else:
+				return w2
+
+		elif abs(vdot(v3-v2, n)) < tol:
+			if abs(vdot(w1-w2, n)) < tol:
+				ans = sorted((v3, v2, w1, w2), key=lambda x:vdot(x, nn))
+				return (ans[1] + ans[2])/2
+			elif abs(vdot(w3-w2, n)) < tol:
+				ans = sorted((v3, v2, w3, w2), key=lambda x:vdot(x, nn))
+				return (ans[1] + ans[2])/2
+			else:
+				return w2
+		else:
+			return v2
+
 
 		if (abs(vdot(v1-v2, n)) < tol or abs(vdot(v3-v2, n)) < tol):
 			return b.find_furthest(-n)

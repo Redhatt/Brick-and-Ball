@@ -13,16 +13,16 @@ top = [[OX, OY], [X, OY]]
 lef = [[OX, OY], [OX, Y]]
 
 # p = Polygon(hexa, 200, 200, color='blue', e=1)
-r = Polygon(square, 200, 200, color='green', e=1)
-p = Polygon(square, 200, 200, color='green', e=1)
-c = Cirlce([2.0, 2], unit_len, 200, 2, color='red', e=1, mu=0.8)
+r = Polygon(vert=square, mass=200000, mi=200000, color='green', e=1)
+p = Polygon(vert=square, mass=20, mi=20, color='green', e=1)
+c = Cirlce([2.0, 2], unit_len, 20, 2, color='red', e=1, mu=0.8)
 c.place([X/2, Y/2])
 r.place([2, 3])
 p.place([6, 3])
 p.scale(3)
-r.scale(3)
+r.scale(8)
 c.scale(3)
-boxes = [c]
+boxes = [c, r, p]
 
 
 wall_top = Line(top, 1e9, 1e9, color='cyan', e=0.5, move=False)
@@ -38,19 +38,19 @@ drag_ang = DragAng()
 contianer = []
 forces = []
 walls = [wall_left, wall_right, wall_top, wall_down]
-boxes = []
-nt = 3
-for i in range(nt):
-    v = Polygon(square, 20, 2, e=0.5)
-    # pos = [((OX+2*unit_len)*(nt-i) + (OX + nt*unit_len + 2)*(i))/nt, Y-3*unit_len]
-    pos = [X/2, ((OY+1*unit_len)*(nt-i) + (OY + nt*unit_len + 2)*(i))/nt]
-    v.place(pos)
-    v.scale(2)
-    v.attach_force(gravity)
-    v.attach_force(drag)
-    v.attach_torque(drag_ang)
-    boxes.append(v)
-    control = v 
+# boxes = []
+# nt = 3
+# for i in range(nt):
+#     v = Polygon(vert=square, mass=20, mi=2, e=0.5)
+#     # pos = [((OX+2*unit_len)*(nt-i) + (OX + nt*unit_len + 2)*(i))/nt, Y-3*unit_len]
+#     pos = [X/2, ((OY+1*unit_len)*(nt-i) + (OY + nt*unit_len + 2)*(i))/nt]
+#     v.place(pos)
+#     v.scale(2)
+#     v.attach_force(gravity)
+#     v.attach_force(drag)
+#     v.attach_torque(drag_ang)
+#     boxes.append(v)
+#     control = v 
 
 control = boxes[-1]
 for i in boxes:
@@ -78,7 +78,7 @@ clock = pygame.time.Clock()
 run = True
 start, end = 0, 0
 ff = 1 # frame frame
-dt = 0.1
+dt = 0.01
 
 while run:
     start = time()

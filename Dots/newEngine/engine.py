@@ -9,7 +9,7 @@ FPS = 60
 scale = 100
 
 class Polygon:
-    def __init__(self, vert: list, mass: float, mi: float, cm_pos=None, vel=np.array([0, 0], dtype=np.float32), w=0, e=1, move=True, color=None, type='Polygon', mu=0.1):
+    def __init__(self, vert: list, mass: float, mi: float, points=[], cm_pos=None, vel=np.array([0, 0], dtype=np.float32), w=0, e=1, move=True, color=None, type='Polygon', mu=0.1):
         '''
         @param:vert-> list a 2d list with each vertix's coordinates
         @param:mass-> mass of the shape
@@ -29,6 +29,7 @@ class Polygon:
         self.mass = mass
         self.mi = mi
         self.vert = [np.array(i, dtype=np.float32) for i in vert]
+        self.points = [np.array(i, dtype=np.float32) for i in points]
         self.e = e
         self.mu = mu
 
@@ -52,6 +53,9 @@ class Polygon:
         cent = centroid(self.vert) if cent is None else cent
         for i in range(len(self.vert)):
             self.vert[i] = s*(self.vert[i] - cent) + cent
+        
+        for i in range(len(self.points)):
+            self.points[i] = s*(self.points[i] - cent) + cent
             
 
     # to shift the shape
@@ -63,6 +67,9 @@ class Polygon:
 
         for i in range(len(self.vert)):
             self.vert[i] += shift
+        
+        for i in range(len(self.points)):
+            self.points[i] += shift
 
     # to turn the shape
     def turn(self, angle):
@@ -75,6 +82,13 @@ class Polygon:
             vert = vrot(rot_mat, vert)
             # vert = rot_mat@vert
             self.vert[i] = vert + self.cm_pos
+        
+        for i in range(len(self.points)):
+            vert = self.points[i] - self.cm_pos
+            vert = vrot(rot_mat, vert)
+            # vert = rot_mat@vert
+            self.points[i] = vert + self.cm_pos
+
 
     # to place the shape at desired location
     def place(self, pos):
@@ -92,6 +106,9 @@ class Polygon:
         con = [(int(scale*i[0]), int(scale*i[1])) for i in self.vert]
         cen = (int(scale*self.cm_pos[0]), int(scale*self.cm_pos[1]))
         pygame.draw.polygon(screen, self.color, con)
+        points = [(int(scale*i[0]), int(scale*i[1])) for i in self.points]
+        for i in points:
+            pygame.draw.circle(screen, clr(dot_color), i, 2)
         if cm:
             pygame.draw.circle(screen, clr(dot_color), cen, 2)
 
@@ -100,6 +117,9 @@ class Polygon:
         delta = self.cm_pos - self.cm_pos_last
         for i in range(len(self.vert)):
             self.vert[i] += delta
+        
+        for i in range(len(self.points)):
+            self.points[i] += delta
 
     # rotation method used in motion dynamics
     def rotation(self):
@@ -111,6 +131,12 @@ class Polygon:
             vert = vrot(rot_mat, vert)
             # vert = rot_mat@vert
             self.vert[i] = vert + self.cm_pos
+        
+        for i in range(len(self.points)):
+            vert = self.points[i] - self.cm_pos
+            vert = vrot(rot_mat, vert)
+            # vert = rot_mat@vert
+            self.points[i] = vert + self.cm_pos
 
     # to simulate impulse force on the shape
     def impulse_force(self, p):
@@ -203,10 +229,10 @@ class Line(Polygon):
             pygame.draw.circle(screen, clr(dot_color), cen, width//2)
 
 class Cirlce(Polygon):
-    def __init__(self, center, radius, mass, mi, vel=np.array([0, 0], dtype=np.float32), w=0, e=1, move=True, color=None, type='Circle', mu=0.1):
+    def __init__(self, center, radius, mass, mi, points=[], vel=np.array([0, 0], dtype=np.float32), w=0, e=1, move=True, color=None, type='Circle', mu=0.1):
         self.radius = radius
         Polygon.__init__(self, [], mass, mi, center, vel, w, e, move, color, type=type, mu=mu)
-        self.vert.append(self.find_furthest())
+        self.points = points + [self.find_furthest()]
 
     def scale(self, s):
         Polygon.scale(self, s, cent=self.cm_pos)
@@ -216,11 +242,9 @@ class Cirlce(Polygon):
     def draw(self, screen, cm=True, dot_color='black'):
         cen = (int(scale*self.cm_pos[0]), int(scale*self.cm_pos[1]))
         pygame.draw.circle(screen, self.color, cen, scale*self.radius)
-        con = [(int(scale*i[0]), int(scale*i[1])) for i in self.vert]
-        for i in con:
+        points = [(int(scale*i[0]), int(scale*i[1])) for i in self.points]
+        for i in points:
             pygame.draw.circle(screen, clr(dot_color), i, 2)
-        if cm:
-            pygame.draw.circle(screen, clr(dot_color), cen, 2)
 
     # finds furthest point in some direction
     def find_furthest(self, direction=np.array([1.0, 0.0]), dot=False, index=False):
@@ -232,7 +256,7 @@ class Cirlce(Polygon):
         max_point = self.radius * unit(direction) + self.cm_pos
 
         if dot: return max_d
-        return max_point
+        return max_point[:]
 
 def Linear_integrator(shape, dt=0.1):
     # semi-implicit eularian
