@@ -21,8 +21,8 @@ class Polygon:
         self.color = clr(color)
         self.type = type
         self.move = move
-        self.tol_v = 0.0001
-        self.tol_w = 0.00005
+        self.tol_v = 0.005
+        self.tol_w = 0.005
 
 
         # mass inertia postions coff of restitution
@@ -268,7 +268,7 @@ def angular_integrator(shape, dt=0.1):
     shape.w += shape.acc_ang * dt 
     shape.cm_ang += shape.w * dt
 
-def solver(a, b, n, dis, contact, tol=0.01):
+def solver(a, b, n, dis, contact, r_ap=None, r_bp=None, tol=0.01):
     # reltive positions from com of shapes to contact
     r_ap = contact - a.cm_pos
     r_bp = contact - b.cm_pos

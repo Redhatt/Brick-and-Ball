@@ -78,6 +78,44 @@ def support(a, b, d):
     '''
     return a.find_furthest(d) - b.find_furthest(-d)
 
-def constraint_solver(amass, bmass, ami, bmi, av, bv):
-    pass
+def constraint_solver(a, b, n, dis, r_ap, r_bp, tol=0.01):
+    # reltive positions from com of shapes to contact
+    # v_ap = v_acom + w_a * r_ap  and v_bp = v_bcom + w_b * r_bp
+    v_ap = a.vel + a.w * normal(r_ap)
+    v_bp = b.vel + b.w * normal(r_bp)
+
+    # v_ab = v_ap - v_bp
+    v_ab = v_ap - v_bp
+
+    e = 1
+    numerator = -(1 + e)*vdot(v_ab, n)
+    if (not a.move) and b.move:
+        denominator = (1/b.mass) + (vdot(normal(r_bp), n)**2) / b.mi
+        J = (numerator / denominator)*n
+        T_b = cross(J, r_bp)
+        b.impulse_force(-J)
+        b.impulse_torque(-T_b)
+        k = 1
+
+    elif a.move and (not b.move):
+        denominator = (1/a.mass) + (vdot(normal(r_ap), n)**2) / a.mi
+        J =  (numerator / denominator)*n
+        T_a = cross(J, r_ap)
+        a.impulse_force(J)
+        a.impulse_torque(T_a)
+        k = 0
+        
+    else:
+        denominator = (1/a.mass + 1/b.mass) + (vdot(normal(r_ap), n)**2) / a.mi + (vdot(normal(r_bp), n)**2) / b.mi
+        J =  (numerator / denominator)*n
+        T_a = cross(J, r_ap)
+        T_b = cross(J, r_bp)
+        a.impulse_force(J)
+        b.impulse_force(-J)
+        a.impulse_torque(T_a)
+        b.impulse_torque(-T_b)
+        k = a.mass / (a.mass + b.mass)
+
+    a.shift(-dis*(1-k)*n)
+    b.shift((dis*k*n))
 

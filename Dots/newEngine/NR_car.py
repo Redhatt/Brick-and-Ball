@@ -10,9 +10,9 @@ OX, OY, X, Y = diff, diff, length / scale -diff, breadth / scale - diff
 top = [[OX, OY], [X, OY]]
 lef = [[OX, OY], [OX, Y]]
 car_vert = [[0, 0], [3, 0], [3, 2], [0, 2]]
-car = Polygon(car_vert, 200, 200, color='blue', e=1)
-f_wheel = Cirlce([4.5, 5], 0.5, 50, 20, color='red', e=1, mu=0.9)
-r_wheel = Cirlce([2.5, 5], 0.5, 50, 20, color='red', e=1, mu=0.9)
+car = Polygon(car_vert, 20, 20, color='blue', e=1)
+f_wheel = Cirlce([4.5, 4.6], 0.5, 50, 20, color='red', e=1, mu=0.9)
+r_wheel = Cirlce([2.5, 4.6], 0.5, 50, 20, color='red', e=1, mu=0.9)
 car.place((3.5, 3))
 car.points = [[2.5, 3], [4.5, 3]]
 
@@ -21,23 +21,17 @@ drag = Drag()
 drag_ang = DragAng()
 k = 9000
 beta = 100
-spring1 = Spring(k=k, beta=beta)
-spring2 = Spring(k=k, beta=beta)
-spring3 = Spring(k=k, beta=beta)
-spring4 = Spring(k=k, beta=beta)
-spring5 = Spring(k=k, beta=beta)
-spring6 = Spring(k=k, beta=beta)
-spring7 = Spring(k=k, beta=beta)
+rod1 = Rod()
+rod2 = Rod()
+rod3 = Rod()
+rod4 = Rod()
+rod5 = Rod()
 
-
-spring1.attach(car, f_wheel, index=[1], adjust=True)
-spring2.attach(car, r_wheel, index=[0], adjust=True)
-spring3.attach(car, f_wheel, index=[], adjust=True)
-spring4.attach(car, r_wheel, index=[], adjust=True)
-spring5.attach(f_wheel, r_wheel, index=[], adjust=True)
-spring6.attach(car, f_wheel, index=[0], adjust=True)
-spring7.attach(car, r_wheel, index=[1], adjust=True)
-
+rod1.attach(car, f_wheel, index=[1], adjust=True)
+rod2.attach(car, r_wheel, index=[0], adjust=True)
+rod4.attach(car, f_wheel, index=[0], adjust=True)
+rod5.attach(car, r_wheel, index=[1], adjust=True)
+# rod3.attach(r_wheel, f_wheel, index=[], adjust=True)
 
 
 wall_top = Line(top, 1e9, 1e9, color='olive', e=0.5, move=False, type='Line')
@@ -58,7 +52,7 @@ for i in boxes:
     i.attach_force(drag_ang)
     contianer.append(i)
 
-forces = [spring1, spring2, spring3, spring4, spring5, spring6, spring7, gravity]
+forces = [rod1, rod2, rod4, rod5, gravity]
 
 FPS = 1000
 pygame.init()

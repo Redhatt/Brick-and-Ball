@@ -4,7 +4,7 @@ from colors import *
 import pygame
 
 class Spring:
-    def __init__(self, k=1, beta=0.1, length=1, color=None):
+    def __init__(self, k=1, beta=0.1, length=1, color=None, width=3):
         self.k = k
         self.beta = beta 
         self.length = length
@@ -14,13 +14,15 @@ class Spring:
         self.v_ab = 0
         self.color = clr(color)
         self.index = [None, None]
-    
+        self.direction = np.array([0.0, 0.0])
+        self.width = width
+
     def update(self):
         self.left  = self.a.cm_pos if self.index[0] is None else self.a.points[self.index[0]]
         self.right = self.b.cm_pos if self.index[1] is None else self.b.points[self.index[1]]
-        d, mag = unit(self.left - self.right, mag=True)
+        self.direction, mag = unit(self.left - self.right, mag=True)
         self.stretch = mag - self.length
-        self.v_ab = vdot(d, self.a.vel - self.b.vel)
+        self.v_ab = vdot(self.direction, self.a.vel - self.b.vel)
     
 
     def attach_to_shape(self, shape, end):
@@ -56,16 +58,20 @@ class Spring:
     def get(self, shape):
         return self.force * unit(shape.cm_pos - (self.left + self.right)/2)
     
-    def draw(self, screen, scale, width=2):
-        pygame.draw.line(screen, self.color, scale * self.left, scale * self.right, width)
+    def draw(self, screen, scale):
+        pygame.draw.line(screen, self.color, scale * self.left, scale * self.right, self.width)
 
 
 class Rod(Spring):
-    def __init__(self, length=1, color=None):
-        Spring.__init__(self, k=0, beta=0, length=length, color=color)
+    def __init__(self, length=1, color=None, width=5):
+        Spring.__init__(self, k=0, beta=0, length=length, color=color, width=width)
     
     def apply(self, t, dt):
-        pass
+        # a, b, n, dis, contact, r_ap=None, r_bp=None, tol=0.01
+        self.update()
+        r_ap, r_bp = self.left - self.a.cm_pos, self.right - self.b.cm_pos
+        constraint_solver(self.a, self.b, self.direction, self.stretch, r_ap=r_ap, r_bp=r_bp)
+        
     
 class GravityWorld:
     def __init__(self, g=0.981, direction=np.array([0.0, 1.0])):
