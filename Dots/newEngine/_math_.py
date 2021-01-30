@@ -78,9 +78,12 @@ def support(a, b, d):
     '''
     return a.find_furthest(d) - b.find_furthest(-d)
 
-def constraint_solver(a, b, n, dis, r_ap, r_bp, tol=0.01):
+def constraint_solver(a, b, n, dis, c1, c2, tol=0.01):
     # reltive positions from com of shapes to contact
     # v_ap = v_acom + w_a * r_ap  and v_bp = v_bcom + w_b * r_bp
+    r_ap = c1 - a.cm_pos
+    r_bp = c2 - b.cm_pos
+
     v_ap = a.vel + a.w * normal(r_ap)
     v_bp = b.vel + b.w * normal(r_bp)
 

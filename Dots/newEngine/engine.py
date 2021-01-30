@@ -6,7 +6,7 @@ ex = sys.exit
 
 length, breadth = 1000, 700
 FPS = 60
-scale = 100
+scale = 20
 
 class Polygon:
     def __init__(self, vert: list, mass: float, mi: float, points=[], cm_pos=None, vel=np.array([0, 0], dtype=np.float64), w=0, e=1, move=True, color=None, type='Polygon', mu=0.1):
@@ -268,7 +268,7 @@ def angular_integrator(shape, dt=0.1):
     shape.w += shape.acc_ang * dt 
     shape.cm_ang += shape.w * dt
 
-def solver(a, b, n, dis, contact, r_ap=None, r_bp=None, tol=0.01):
+def solver(a, b, n, dis, contact, tol=0.01):
     # reltive positions from com of shapes to contact
     r_ap = contact - a.cm_pos
     r_bp = contact - b.cm_pos

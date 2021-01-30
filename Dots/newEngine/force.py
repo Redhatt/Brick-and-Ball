@@ -4,7 +4,7 @@ from colors import *
 import pygame
 
 class Spring:
-    def __init__(self, k=1, beta=0.1, length=1, color=None, width=3):
+    def __init__(self, k=1, beta=0.1, length=1, color=None, width=3, tol=0.001):
         self.k = k
         self.beta = beta 
         self.length = length
@@ -16,6 +16,7 @@ class Spring:
         self.index = [None, None]
         self.direction = np.array([0.0, 0.0])
         self.width = width
+        self.tol = tol
 
     def update(self):
         self.left  = self.a.cm_pos if self.index[0] is None else self.a.points[self.index[0]]
@@ -63,18 +64,29 @@ class Spring:
 
 
 class Rod(Spring):
-    def __init__(self, length=1, color=None, width=5):
-        Spring.__init__(self, k=0, beta=0, length=length, color=color, width=width)
+    def __init__(self, length=1, color=None, width=5, tol=0.0001):
+        Spring.__init__(self, k=0, beta=0, length=length, color=color, width=width, tol=tol)
     
     def apply(self, t, dt):
-        # a, b, n, dis, contact, r_ap=None, r_bp=None, tol=0.01
-        self.update()
-        r_ap, r_bp = self.left - self.a.cm_pos, self.right - self.b.cm_pos
-        constraint_solver(self.a, self.b, self.direction, self.stretch, r_ap=r_ap, r_bp=r_bp)
+        for _ in range(1):
+            self.update()
+            if abs(self.stretch) < self.tol: break
+            constraint_solver(self.a, self.b, self.direction, self.stretch, c1=self.left, c2=self.right)
+
+class RodSlide(Rod):
+    def __init__(self, length=1, delta=1, color=None, width=5, tol=0.0001):
+        Rod.__init__(self, length=length, color=color, width=width, tol=tol)
+        self.delta = delta
         
-    
+    def apply(self, t, dt):
+        for _ in range(1):
+            self.update()
+            if self.delta - abs(self.stretch) > 0: break
+            vv = (abs(self.stretch) - self.delta)*np.sign(self.stretch)
+            constraint_solver(self.a, self.b, self.direction, vv, c1=self.left, c2=self.right)
+
 class GravityWorld:
-    def __init__(self, g=0.981, direction=np.array([0.0, 1.0])):
+    def __init__(self, g=3, direction=np.array([0.0, 1.0])):
         self.g = g
         self.direction = direction
         self.apl = 0

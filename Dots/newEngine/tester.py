@@ -17,13 +17,13 @@ r = Polygon(vert=square, mass=20, mi=20, color='green', e=1)
 p = Polygon(vert=square, mass=20, mi=20, color='green', e=1)
 c = Cirlce([2.0, 2], unit_len, 20, 2, color='red', e=1, mu=0.8)
 c.place([X/2, Y/2])
-r.place([2, 3])
-p.place([6, 3])
+r.place([2, 6])
+p.place([2, 3])
 p.scale(3)
 r.scale(8)
 c.scale(3)
 control = [r]
-boxes = [c, r]
+boxes = [p, r]
 
 
 wall_top = Line(top, 1e9, 1e9, color='cyan', e=0.5, move=False)
@@ -62,8 +62,8 @@ for i in boxes:
     contianer.append(i)
 
 
-rod = Rod()
-rod.attach(c, r, adjust=True)
+rod = RodSlide(delta=0.2)
+rod.attach(p, r, adjust=True)
 forces.append(rod)
 forces.append(gravity)
 forces.append(drag)
